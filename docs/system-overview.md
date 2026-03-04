@@ -40,9 +40,37 @@
 
 ### 1. Core Platform
 **ID:** `core-platform`  
-**Purpose:** Serve the base CardDemo experience: authentication, account/card CRUD, transaction posting, billing, and batch orchestration over VSAM data.  
-**Key Components:** BMS mapsets (`COSGN00`, `COMEN01`, `COACTVW`, `COTRN02`, `COBIL00`), COBOL programs (`COSGN00C`, `COACTVWC`, `COTRN02C`, `CBIL00C`, `COPAUS0C` when pending authorizations are enabled), JCL batch jobs (`POSTTRAN`, `CREASTMT`, `TRANBKP`, `OPENFIL`, `CLOSEFIL`), scheduler definitions (`app/scheduler/*.ca7`), shared copybooks (`app/cpy/*.cpy`).  
-**Public APIs:** CICS transactions `CC00` (sign-on), `CM00` (main menu), `CAUP/CCUP` (account/card updates), `CT00/CT01/CT02` (transaction list/view/add), `CB00` (bill payment), `CR00` (reports). Batch interfaces include `POSTTRAN`, `CREASTMT`, `TRANEXTR`, `INTCALC`, `TRANBKP`, `TRANIDX`.  
+**Purpose:** Deliver the mandatory CardDemo runtime: 3270 sign-on, role-aware menu routing, account/card lifecycle operations, transaction capture, bill payment, and report triggering; plus nightly/monthly batch cycles that reconcile VSAM transaction state and generate statements. This module is the dependency base for all optional extensions.  
+**Business Context:** Core-platform is the operational backbone for both cardholder flows (self-service updates, posting, bill pay) and back-office controls (security maintenance, reporting, batch closure/reopen windows). If this module is degraded, optional DB2/IMS/MQ features cannot provide end-to-end business value.  
+**Key Components:**  
+- **Online COBOL programs:** `COSGN00C` (auth + role routing), `COMEN01C` (user menu), `COADM01C` (admin menu), `COACTVWC`/`COACTUPC` (account view/update), `COCRDUPC` (card update), `COTRN00C`/`COTRN01C`/`COTRN02C` (transaction list/view/add), `COBIL00C` (bill pay), `CORPT00C` (report submission).  
+- **BMS mapsets:** `COSGN00`, `COMEN01`, `COACTVW`, `COACTUP`, `COCRDUP`, `COTRN00`, `COTRN01`, `COTRN02`, `COBIL00`, `CORPT00`.  
+- **CICS resource definitions:** `app/csd/CARDDEMO.CSD` defines files (`ACCTDAT`, `CARDDAT`, `CCXREF`, `CXACAIX`, `TRANSACT`, `USRSEC`), mapsets, programs, and transactions (`CC00`, `CM00`, `CA00`, `CAUP`, `CAVW`, `CCUP`, `CT00`, `CT01`, `CT02`, `CB00`, `CR00`, `CU00-CU03`).  
+- **Batch/JCL orchestration:** `POSTTRAN`, `INTCALC`, `TRANBKP`, `COMBTRAN`, `TRANIDX`, `CREASTMT`, `OPENFIL`, `CLOSEFIL`; supported by CA7 (`app/scheduler/CardDemo.ca7`) and Control-M (`app/scheduler/CardDemo.controlm`) chains.  
+- **Shared contracts:** copybooks `COCOM01Y` (COMMAREA), `CVACT01Y`/`CVACT02Y`/`CVACT03Y` (account/card/xref), `CVTRA05Y` (transaction), `CSUSR01Y` (security user).  
+**Public APIs:**  
+- **CICS transactions:** `CC00`, `CM00`, `CA00`, `CAVW`, `CAUP`, `CCLI`, `CCDL`, `CCUP`, `CT00`, `CT01`, `CT02`, `CB00`, `CR00`, `CU00`, `CU01`, `CU02`, `CU03`.  
+- **Online interfaces:** BMS map input/output contracts with PF-key controls (`ENTER`, `PF3`, `PF4`, `PF5`, `PF7`, `PF8`, `PF12` depending on screen).  
+- **Batch interfaces:** `POSTTRAN`, `CREASTMT`, `INTCALC`, `TRANBKP`, `COMBTRAN`, `TRANIDX`, `OPENFIL`, `CLOSEFIL` (plus optional weekly jobs coordinated by scheduler definitions).  
+- **Operational scripts:** `scripts/run_full_batch.sh`, `scripts/run_posting.sh`, `scripts/run_interest_calc.sh` for JES submission order examples.  
+**Dependencies:**  
+- **Internal:** Feeds optional `authorization`, `transaction-type-management`, and `mq-account-extractions` modules through shared COMMAREA, VSAM entities, and menu integration points (`COMEN02Y`, `COADM02Y`).  
+- **External runtime:** CICS TS, VSAM KSDS/AIX, JES/JCL, IDCAMS/SORT, RACF model, CA7/Control-M; assembler utilities `MVSWAIT` and `COBDATFT` support timing/date conversion patterns in batch ecosystems.  
+**Data Models and Structures:**  
+- **Security (`CSUSR01Y`):** user ID, password, user type (`A`/`U`) for CC00 gatekeeping.  
+- **Account (`CVACT01Y`):** account ID, active flag, current/cycle balances, credit limits, lifecycle dates, group ID.  
+- **Card (`CVACT02Y`):** card number, account ID, CVV, embossed name, expiry date, active status.  
+- **Card XREF (`CVACT03Y`):** card number ↔ customer ID ↔ account ID bridge used by account/card/transaction workflows.  
+- **Transaction (`CVTRA05Y`):** transaction ID, type/category/source, description, amount, merchant fields, card number, orig/proc timestamps.  
+- **Application context (`COCOM01Y`):** FROM/TO program+transaction, signed-on user, selected account/card/customer IDs, map context.  
+**Module-Specific Business Rules:**  
+- Sign-on requires non-blank credentials and exact password match in `USRSEC`; admin users route to `CA00`, standard users route to `CM00`.  
+- Menu options are validated against copybook-defined counts (`COMEN02Y`, `COADM02Y`); non-numeric or out-of-range options return map errors.  
+- Account/card update transactions require valid account/card keys and cross-reference integrity through `CCXREF`/`CXACAIX`.  
+- `CT02` enforces required fields, numeric code constraints, signed amount format (`-99999999.99`), and calendar-valid `YYYY-MM-DD` dates (`CSUTLDTC`).  
+- `CB00` refuses payment when current balance is zero/negative; on confirm=`Y`, it writes a bill-payment transaction and rewrites account balance.  
+- `CT00` pagination uses VSAM browse semantics (`STARTBR`, `READNEXT`, `READPREV`) with explicit top/bottom boundary messaging.  
+- Batch windows require `CLOSEFIL` before mutating transaction files and `OPENFIL` after reload/index steps to restore online access.  
 **User Story Examples:**  
 - As a cardholder, I want to update my mailing address via `CAUP` so that statements route to my new location.  
 - As a payments analyst, I want nightly `POSTTRAN` and `INTCALC` to finish before 4:00 AM so downstream reporting jobs can start.  
