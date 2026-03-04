@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Platform - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f8f9fc; color:#1f2933; }
+        .container { max-width: 1080px; margin: 0 auto; padding: 24px 20px 40px; }
+        .header { padding: 32px; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; margin-bottom: 24px; }
+        section { margin-bottom: 32px; }
+        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        ul { padding-left: 20px; }
+        code, pre { background:#0f172a;color:#f1f5f9;padding:8px;border-radius:6px;display:block; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+        footer { margin-top:24px; font-size:0.9rem; color:#475569; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Core Platform</h1>
+            <p>Guide for developing user stories anchored on the base CardDemo experience (authentication, VSAM CRUD, bills, and batch orchestration).</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Deliver the standard cardholder and admin journeys—sign-on, account/card maintenance, transaction posting, bill payments, and batch reporting—using CICS/VSAM primitives.</p>
+            <p><strong>Business Context:</strong> This is the foundational module that every optional extension builds on, so successful user stories here unlock reliable online operations and nightly batch runs.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account Maintenance:</strong> As a cardholder, I want to update my billing address via the `CAUP` screen so subsequent statements reflect the new data.</li>
+                <li><strong>Transaction Posting:</strong> As an operations analyst, I want `CT02` to post a debit transaction with accurate posting date so the ledger balances before nightly processing.</li>
+                <li><strong>Billing & Reports:</strong> As a finance user, I want `CB00` to confirm payment success and queue the record for `CREASTMT`.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>BMS map reuse:</strong> `COSGN00`, `COMEN01`, `COACTVW`, `COTRN02` already define layout/keys for standard journeys; extend them instead of rebuilding from scratch.</li>
+                <li><strong>Shared copybooks:</strong> Copybooks in `app/cpy` describe accounts, cards, and transactions; adding fields here propagates to multiple COBOL and batch programs.</li>
+                <li><strong>Batch templates:</strong> JCL templates and scheduler definitions (CA7/Control-M) exist for `POSTTRAN`, `TRANEXTR`, and `CREASTMT`, making job sequencing predictable.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new field to an existing BMS map and COBOL structure (e.g., a status flag on `CAUP`).</li>
+                <li><strong>Medium (3-5 pts):</strong> Enhance `CT02` to support a new posting type that requires an extra VSAM lookup.</li>
+                <li><strong>Complex (6-8 pts):</strong> Introduce a multi-step batch job change that alters `POSTTRAN` and `CREASTMT` dependencies or migrates data between VSAM files.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>COBOL programs:</strong> `COSGN00C`, `COACTVWC`, `COTRN02C`, `COPAUS0C`.</li>
+                        <li><strong>BMS mapsets:</strong> `COSGN00`, `COMEN01`, `COACTUP`, `COTRN*`, `COPAU00`.</li>
+                        <li><strong>Batch jobs:</strong> `POSTTRAN`, `CREASTMT`, `TRANBKP`, `INTCALC`, `TRANIDX`.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li><strong>VSAM datasets:</strong> `CARDDEMO.ACCTDATA.PS`, `CARDDATA`, `TRANSACT.VSAM.KSDS`.</li>
+                        <li><strong>JCL templates:</strong> `app/jcl/*` for compile and run.</li>
+                        <li><strong>Authentication:</strong> RACF (`ADMIN001`, `USER0001`).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>
+CC00 - Sign-on and dispatch
+CAUP / CCUP - Account/card maintenance
+CT02 - Post transaction
+CB00 - Bill payment
+POSTTRAN / CREASTMT - Batch posting and statement generation
+            </code></pre>
+        </section>
+
+        <section class="acceptance">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>The BMS map confirms successful updates with a message area entry and PF3 to exit.</li>
+                <li>`CT02` updates VSAM `TRANSACT` and makes the row visible to `CT01` lists immediately.</li>
+                <li>`POSTTRAN` completes within the nightly window and leaves no open files (`OPENFIL`/`CLOSEFIL` pair confirms clean-up).</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Documentation Index</a></p>
+            <p><em>Last updated: 2026-03-04</em></p>
+        </footer>
+    </div>
+</body>
+</html>
