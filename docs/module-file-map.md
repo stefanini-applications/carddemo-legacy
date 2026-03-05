@@ -1,5 +1,6 @@
 # Module File Map
 <!-- MODULE_FILE_MAP_START -->
+README.md = core-platform
 app/asm/** = core-platform
 app/bms/** = core-platform
 app/cbl/** = core-platform

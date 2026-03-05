@@ -1,103 +1,1034 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Core Platform - User Story Development Guide</title>
+    <meta name="last-updated" content="2026-03-05T15:30:27Z">
+    <title>core-platform - Module Documentation</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f8f9fc; color:#1f2933; }
-        .container { max-width: 1080px; margin: 0 auto; padding: 24px 20px 40px; }
-        .header { padding: 32px; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; margin-bottom: 24px; }
-        section { margin-bottom: 32px; }
-        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-        ul { padding-left: 20px; }
-        code, pre { background:#0f172a;color:#f1f5f9;padding:8px;border-radius:6px;display:block; }
-        .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
-        footer { margin-top:24px; font-size:0.9rem; color:#475569; }
+        :root {
+            --bg: #1a1a1a;
+            --bg-soft: #242424;
+            --panel: #202020;
+            --text: #e0e0e0;
+            --muted: #b0b0b0;
+            --heading: #4fc3f7;
+            --accent: #81c784;
+            --warn: #ffcc80;
+            --danger: #ef9a9a;
+            --border: #3a3a3a;
+            --code-bg: #111827;
+            --link: #4fc3f7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 1220px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        nav {
+            margin-bottom: 18px;
+        }
+
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            background: linear-gradient(140deg, #1f2937, #111827);
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            color: var(--heading);
+            border-bottom: 2px solid var(--heading);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: var(--accent);
+            margin-top: 28px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+
+        h3 {
+            color: var(--warn);
+            margin-top: 20px;
+        }
+
+        h4 {
+            color: var(--heading);
+            margin-top: 18px;
+        }
+
+        p,
+        li,
+        td,
+        th {
+            color: var(--text);
+        }
+
+        .lead {
+            color: #d7e9ff;
+            margin-bottom: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .tag {
+            display: inline-block;
+            margin: 0 8px 8px 0;
+            padding: 3px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--muted);
+            background: #252525;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+            background: #1d1d1d;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #2b2b2b;
+            color: #e8f5ff;
+        }
+
+        code {
+            background: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #d2f8ff;
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: #dbeafe;
+            display: block;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .note {
+            border-left: 4px solid var(--heading);
+            background: #16212f;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .warning {
+            border-left: 4px solid var(--danger);
+            background: #2a1717;
+            padding: 10px 12px;
+            border-radius: 8px;
+        }
+
+        .small {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        @media (max-width: 900px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>📦 Core Platform</h1>
-            <p>Guide for developing user stories anchored on the base CardDemo experience (authentication, VSAM CRUD, bills, and batch orchestration).</p>
+    <div class="page">
+        <nav>
+            <a href="../../index.html">← Back to Index</a>
+        </nav>
+
+        <header class="hero">
+            <h1>core-platform</h1>
+            <p class="lead">
+                Base CardDemo module for sign-on, account and card maintenance, transaction browsing and posting,
+                bill payments, report submission, and nightly batch orchestration over VSAM data sets.
+            </p>
+            <div style="margin-top: 12px;">
+                <span class="tag">CICS</span>
+                <span class="tag">COBOL</span>
+                <span class="tag">BMS</span>
+                <span class="tag">VSAM KSDS/AIX</span>
+                <span class="tag">JCL</span>
+                <span class="tag">CA7</span>
+                <span class="tag">Control-M</span>
+                <span class="tag">RACF-aligned security model</span>
+            </div>
         </header>
 
-        <section class="overview">
-            <h2>📋 Overview</h2>
-            <p><strong>Purpose:</strong> Deliver the standard cardholder and admin journeys—sign-on, account/card maintenance, transaction posting, bill payments, and batch reporting—using CICS/VSAM primitives.</p>
-            <p><strong>Business Context:</strong> This is the foundational module that every optional extension builds on, so successful user stories here unlock reliable online operations and nightly batch runs.</p>
+        <section id="overview">
+            <h2>Module Overview And Purpose</h2>
+            <p>
+                The <code>core-platform</code> module is the mandatory runtime baseline for CardDemo. It provides
+                interactive CICS screens for customer operations, VSAM-backed persistence contracts, and the scheduled
+                batch jobs that maintain statements, balances, and transaction lifecycle files.
+            </p>
+            <p>
+                This module is also the dependency anchor for optional extensions:
+                <code>authorization</code>, <code>transaction-type-management</code>, and
+                <code>mq-account-extractions</code>. Even when those extensions are disabled, core-platform must remain
+                fully functional for sign-on and day-to-day card/account activities.
+            </p>
+            <div class="note">
+                Runtime baseline from code:
+                <code>app/csd/CARDDEMO.CSD</code> binds online transactions
+                (<code>CC00</code>, <code>CM00</code>, <code>CAUP</code>, <code>CCUP</code>,
+                <code>CT00</code>, <code>CT01</code>, <code>CT02</code>, <code>CB00</code>, <code>CR00</code>)
+                to specific COBOL programs and VSAM file resources.
+            </div>
         </section>
 
-        <section class="us-guide">
-            <h2>🎯 User Story Development Guide</h2>
-
-            <h3>📝 Module-Specific US Templates</h3>
-            <ul>
-                <li><strong>Account Maintenance:</strong> As a cardholder, I want to update my billing address via the `CAUP` screen so subsequent statements reflect the new data.</li>
-                <li><strong>Transaction Posting:</strong> As an operations analyst, I want `CT02` to post a debit transaction with accurate posting date so the ledger balances before nightly processing.</li>
-                <li><strong>Billing & Reports:</strong> As a finance user, I want `CB00` to confirm payment success and queue the record for `CREASTMT`.</li>
-            </ul>
-
-            <h3>⚡ Development Acceleration Factors</h3>
-            <ul>
-                <li><strong>BMS map reuse:</strong> `COSGN00`, `COMEN01`, `COACTVW`, `COTRN02` already define layout/keys for standard journeys; extend them instead of rebuilding from scratch.</li>
-                <li><strong>Shared copybooks:</strong> Copybooks in `app/cpy` describe accounts, cards, and transactions; adding fields here propagates to multiple COBOL and batch programs.</li>
-                <li><strong>Batch templates:</strong> JCL templates and scheduler definitions (CA7/Control-M) exist for `POSTTRAN`, `TRANEXTR`, and `CREASTMT`, making job sequencing predictable.</li>
-            </ul>
-
-            <h3>📊 Complexity Guidelines</h3>
-            <ul>
-                <li><strong>Simple (1-2 pts):</strong> Add a new field to an existing BMS map and COBOL structure (e.g., a status flag on `CAUP`).</li>
-                <li><strong>Medium (3-5 pts):</strong> Enhance `CT02` to support a new posting type that requires an extra VSAM lookup.</li>
-                <li><strong>Complex (6-8 pts):</strong> Introduce a multi-step batch job change that alters `POSTTRAN` and `CREASTMT` dependencies or migrates data between VSAM files.</li>
-            </ul>
-        </section>
-
-        <section class="technical">
-            <h2>🔧 Technical Foundation</h2>
-
+        <section id="architecture-context">
+            <h2>Architectural Context</h2>
             <div class="grid">
-                <div>
-                    <h3>🏗️ Key Components</h3>
+                <article class="card">
+                    <h3>Online Path</h3>
                     <ul>
-                        <li><strong>COBOL programs:</strong> `COSGN00C`, `COACTVWC`, `COTRN02C`, `COPAUS0C`.</li>
-                        <li><strong>BMS mapsets:</strong> `COSGN00`, `COMEN01`, `COACTUP`, `COTRN*`, `COPAU00`.</li>
-                        <li><strong>Batch jobs:</strong> `POSTTRAN`, `CREASTMT`, `TRANBKP`, `INTCALC`, `TRANIDX`.</li>
+                        <li>User enters CICS transaction code (for example <code>CC00</code>).</li>
+                        <li>Mapped screen exchanges through BMS mapsets (for example <code>COSGN00</code>).</li>
+                        <li>Program reads/writes VSAM resources via <code>EXEC CICS READ/WRITE/REWRITE</code>.</li>
+                        <li>Program returns or transfers control with COMMAREA.</li>
                     </ul>
-                </div>
-                <div>
-                    <h3>🔗 Dependencies</h3>
+                </article>
+                <article class="card">
+                    <h3>Batch Path</h3>
                     <ul>
-                        <li><strong>VSAM datasets:</strong> `CARDDEMO.ACCTDATA.PS`, `CARDDATA`, `TRANSACT.VSAM.KSDS`.</li>
-                        <li><strong>JCL templates:</strong> `app/jcl/*` for compile and run.</li>
-                        <li><strong>Authentication:</strong> RACF (`ADMIN001`, `USER0001`).</li>
+                        <li>JCL invokes batch COBOL programs (for example <code>CBTRN02C</code> for <code>POSTTRAN</code>).</li>
+                        <li>Files are closed and opened around jobs (<code>CLOSEFIL</code>/<code>OPENFIL</code> pattern).</li>
+                        <li>Jobs are chained through CA7 and Control-M conditions.</li>
+                        <li>Output includes updated VSAM files, rejects, and generated statements.</li>
                     </ul>
-                </div>
+                </article>
+                <article class="card">
+                    <h3>Data Layer</h3>
+                    <ul>
+                        <li><code>ACCTDAT</code>, <code>CARDDAT</code>, <code>CUSTDAT</code>, <code>TRANSACT</code>, <code>USRSEC</code>.</li>
+                        <li><code>CCXREF</code> and <code>CXACAIX</code> maintain card-account linkage paths.</li>
+                        <li>Copybooks in <code>app/cpy</code> define hard record contracts.</li>
+                        <li>Batch files mirror online structures for staging and rejects.</li>
+                    </ul>
+                </article>
+                <article class="card">
+                    <h3>Security Context</h3>
+                    <ul>
+                        <li>Sign-on reads VSAM security file (<code>USRSEC</code>).</li>
+                        <li>User type is propagated in COMMAREA (<code>A</code> admin, <code>U</code> user).</li>
+                        <li>Menu option execution enforces user type and installed program checks.</li>
+                        <li>CICS resources configured with user key and quasi-reentrant concurrency.</li>
+                    </ul>
+                </article>
             </div>
 
-            <h3>🌐 Public Interfaces</h3>
-            <pre><code>
-CC00 - Sign-on and dispatch
-CAUP / CCUP - Account/card maintenance
-CT02 - Post transaction
-CB00 - Bill payment
-POSTTRAN / CREASTMT - Batch posting and statement generation
-            </code></pre>
+            <h3>Core Platform Context Diagram (Textual)</h3>
+            <pre><code class="language-text">3270 User/Admin
+  -> CICS Transaction (CC00/CM00/CAUP/CCUP/CT00/CT01/CT02/CB00/CR00)
+     -> COBOL Program (COSGN00C/COMEN01C/COACTUPC/COCRDUPC/...)
+        -> BMS Mapset (COSGN00/COMEN01/COTRN02/COBIL00/...)
+        -> VSAM KSDS/AIX (ACCTDAT/CARDDAT/CUSTDAT/CCXREF/CXACAIX/TRANSACT/USRSEC)
+
+Batch Scheduler (CA7 or Control-M)
+  -> CLOSEFIL
+  -> POSTTRAN (CBTRN02C)
+  -> INTCALC (CBACT04C)
+  -> COMBTRAN
+  -> CREASTMT (CBSTM03A)
+  -> TRANIDX
+  -> OPENFIL</code></pre>
         </section>
 
-        <section class="acceptance">
-            <h2>✅ Acceptance Criteria Examples</h2>
+        <section id="key-components">
+            <h2>Key Components And Responsibilities</h2>
+
+            <h3>CICS Transaction And Program Map</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Transaction</th>
+                            <th>Program</th>
+                            <th>Primary Purpose</th>
+                            <th>Primary Data Access</th>
+                            <th>BMS Mapset</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>CC00</code></td>
+                            <td><code>COSGN00C</code></td>
+                            <td>Sign-on and user dispatch to admin/user menu</td>
+                            <td><code>USRSEC</code> read</td>
+                            <td><code>COSGN00</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CM00</code></td>
+                            <td><code>COMEN01C</code></td>
+                            <td>Main menu with option routing and access gating</td>
+                            <td>COMMAREA routing only</td>
+                            <td><code>COMEN01</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CAUP</code></td>
+                            <td><code>COACTUPC</code></td>
+                            <td>Account update with customer/account validations</td>
+                            <td><code>ACCTDAT</code>, <code>CUSTDAT</code>, <code>CCXREF</code></td>
+                            <td><code>COACTUP</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CAVW</code></td>
+                            <td><code>COACTVWC</code></td>
+                            <td>Account view</td>
+                            <td><code>ACCTDAT</code>, <code>CUSTDAT</code>, <code>CCXREF</code></td>
+                            <td><code>COACTVW</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CCLI</code></td>
+                            <td><code>COCRDLIC</code></td>
+                            <td>Card list navigation</td>
+                            <td><code>CARDDAT</code> browse</td>
+                            <td><code>COCRDLI</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CCUP</code></td>
+                            <td><code>COCRDUPC</code></td>
+                            <td>Card update with cross-reference checks</td>
+                            <td><code>CARDDAT</code>, <code>CCXREF</code>, <code>CXACAIX</code></td>
+                            <td><code>COCRDUP</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CT00</code></td>
+                            <td><code>COTRN00C</code></td>
+                            <td>Transaction list with paging and selection</td>
+                            <td><code>TRANSACT</code> browse</td>
+                            <td><code>COTRN00</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CT01</code></td>
+                            <td><code>COTRN01C</code></td>
+                            <td>Transaction detail retrieval by transaction id</td>
+                            <td><code>TRANSACT</code> read</td>
+                            <td><code>COTRN01</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CT02</code></td>
+                            <td><code>COTRN02C</code></td>
+                            <td>Transaction add with required field validation and confirmation</td>
+                            <td><code>CCXREF</code>, <code>CXACAIX</code>, <code>TRANSACT</code>, <code>ACCTDAT</code></td>
+                            <td><code>COTRN02</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CB00</code></td>
+                            <td><code>COBIL00C</code></td>
+                            <td>Bill payment posting against account balance</td>
+                            <td><code>ACCTDAT</code>, <code>CCXREF</code>, <code>TRANSACT</code></td>
+                            <td><code>COBIL00</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>CR00</code></td>
+                            <td><code>CORPT00C</code></td>
+                            <td>Submit report JCL through extra-partition TD queue</td>
+                            <td>TDQ <code>JOBS</code>, report date inputs</td>
+                            <td><code>CORPT00</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Batch Component Responsibilities</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>Program/Utility</th>
+                            <th>Responsibility</th>
+                            <th>Important Inputs</th>
+                            <th>Important Outputs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>POSTTRAN</code></td>
+                            <td><code>CBTRN02C</code></td>
+                            <td>Validate/post daily transactions, update category balances, write rejects</td>
+                            <td><code>DALYTRAN</code>, <code>XREFFILE</code>, <code>ACCTFILE</code>, <code>TCATBALF</code></td>
+                            <td><code>TRANFILE</code>, <code>DALYREJS</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>INTCALC</code></td>
+                            <td><code>CBACT04C</code></td>
+                            <td>Compute interest/fees per account using category balances and disclosure rules</td>
+                            <td><code>TCATBALF</code>, <code>DISCGRP</code>, <code>XREFFILE</code>, <code>ACCTFILE</code></td>
+                            <td><code>TRANSACT</code> system transactions and updated accounts</td>
+                        </tr>
+                        <tr>
+                            <td><code>CREASTMT</code></td>
+                            <td><code>CBSTM03A</code> + SORT/IDCAMS</td>
+                            <td>Produce statements in text and HTML from transaction snapshot</td>
+                            <td><code>TRANSACT</code>, <code>CARDXREF</code>, <code>ACCTDATA</code>, <code>CUSTDATA</code></td>
+                            <td><code>STATEMNT.PS</code>, <code>STATEMNT.HTML</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>TRANBKP</code></td>
+                            <td>REPRO + IDCAMS</td>
+                            <td>Backup and recreate transaction master cluster and AIX</td>
+                            <td><code>TRANSACT.VSAM.KSDS</code></td>
+                            <td><code>TRANSACT.BKUP</code> GDG and fresh KSDS definition</td>
+                        </tr>
+                        <tr>
+                            <td><code>CLOSEFIL</code>/<code>OPENFIL</code></td>
+                            <td>Operational JCL</td>
+                            <td>Control dataset availability around batch execution</td>
+                            <td>CICS file resources</td>
+                            <td>Closed/opened file state</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="dependencies">
+            <h2>Dependencies</h2>
+
+            <h3>Internal Module Dependencies</h3>
             <ul>
-                <li>The BMS map confirms successful updates with a message area entry and PF3 to exit.</li>
-                <li>`CT02` updates VSAM `TRANSACT` and makes the row visible to `CT01` lists immediately.</li>
-                <li>`POSTTRAN` completes within the nightly window and leaves no open files (`OPENFIL`/`CLOSEFIL` pair confirms clean-up).</li>
+                <li><strong>transaction-type-management:</strong> weekly/periodic type/category refresh jobs affect transaction reference quality consumed by <code>CT02</code>.</li>
+                <li><strong>authorization:</strong> optional menu item <code>COPAUS0C</code> appears in menu options and is runtime-checked through <code>EXEC CICS INQUIRE PROGRAM</code>.</li>
+                <li><strong>mq-account-extractions:</strong> not required for core UI paths but shares VSAM entities.</li>
             </ul>
+
+            <h3>External Runtime Dependencies</h3>
+            <ul>
+                <li>CICS region with CSD resources loaded from <code>app/csd/CARDDEMO.CSD</code>.</li>
+                <li>VSAM clusters and AIX paths:
+                    <code>ACCTDATA</code>, <code>CARDDATA</code>, <code>CARDXREF</code>, <code>TRANSACT</code>, <code>USRSEC</code>.</li>
+                <li>Scheduler platform (CA7 and/or Control-M) for nightly and periodic flows.</li>
+                <li>Batch utilities: IDCAMS, DFSORT, and internal reader TD queue <code>JOBS</code>.</li>
+                <li>Assembler/runtime utilities indirectly used by jobs and procedures in repository setup.</li>
+            </ul>
+
+            <h3>Dependency Notes</h3>
+            <div class="warning">
+                If file definitions are present in CSD but physical data sets are not provisioned, online flows will fail
+                with read/write errors and batch chains will stop early.
+            </div>
+        </section>
+
+        <section id="public-apis">
+            <h2>Public APIs (Transactions, Interfaces, And Examples)</h2>
+
+            <h3>CICS API Surface</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>API Type</th>
+                            <th>Name</th>
+                            <th>Input Contract</th>
+                            <th>Output/Effect</th>
+                            <th>Error Pattern</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Online transaction</td>
+                            <td><code>CC00</code></td>
+                            <td>User ID + password fields on map <code>COSGN0A</code></td>
+                            <td>Routes to <code>COADM01C</code> or <code>COMEN01C</code></td>
+                            <td>Re-displays map with red <code>ERRMSG</code></td>
+                        </tr>
+                        <tr>
+                            <td>Online transaction</td>
+                            <td><code>CM00</code></td>
+                            <td>Numeric option field <code>OPTION</code></td>
+                            <td>XCTL to selected program</td>
+                            <td>Invalid option or unauthorized option message</td>
+                        </tr>
+                        <tr>
+                            <td>Online transaction</td>
+                            <td><code>CT02</code></td>
+                            <td>Account/card key + transaction details + <code>CONFIRM</code></td>
+                            <td>Writes new <code>TRANSACT</code> record; updates account balance</td>
+                            <td>Per-field required checks; confirmation check</td>
+                        </tr>
+                        <tr>
+                            <td>Online transaction</td>
+                            <td><code>CB00</code></td>
+                            <td>Account ID + Y/N confirmation</td>
+                            <td>Writes bill payment transaction and updates account</td>
+                            <td>"You have nothing to pay" and confirmation prompts</td>
+                        </tr>
+                        <tr>
+                            <td>Online transaction</td>
+                            <td><code>CR00</code></td>
+                            <td>Monthly/yearly/custom report selection and dates</td>
+                            <td>Writes JCL lines to TD queue <code>JOBS</code></td>
+                            <td>Date validation and key handling messages</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Batch API Surface</h3>
+            <ul>
+                <li><code>POSTTRAN</code> invokes <code>CBTRN02C</code> and returns non-zero RC when rejects are present.</li>
+                <li><code>INTCALC</code> invokes <code>CBACT04C</code> with date parameter and writes generated system transactions.</li>
+                <li><code>CREASTMT</code> invokes <code>CBSTM03A</code> to write plain-text and HTML statements.</li>
+                <li><code>TRANBKP</code> performs backup + cluster redefine to refresh transaction master storage.</li>
+            </ul>
+
+            <h3>Example: Sign-On Screen Contract (BMS)</h3>
+            <pre><code class="language-cobol">COSGN0A DFHMDI COLUMN=1,LINE=1,SIZE=(24,80)
+USERID  DFHMDF ATTRB=(FSET,IC,NORM,UNPROT),LENGTH=8,POS=(19,43)
+PASSWD  DFHMDF ATTRB=(DRK,FSET,UNPROT),LENGTH=8,POS=(20,43)
+ERRMSG  DFHMDF ATTRB=(ASKIP,BRT,FSET),COLOR=RED,LENGTH=78,POS=(23,1)</code></pre>
+
+            <h3>Example: Authentication Program Logic</h3>
+            <pre><code class="language-cobol">EXEC CICS READ
+     DATASET   (WS-USRSEC-FILE)
+     INTO      (SEC-USER-DATA)
+     RIDFLD    (WS-USER-ID)
+END-EXEC.
+
+IF SEC-USR-PWD = WS-USER-PWD
+   IF CDEMO-USRTYP-ADMIN
+      EXEC CICS XCTL PROGRAM('COADM01C') COMMAREA(CARDDEMO-COMMAREA)
+   ELSE
+      EXEC CICS XCTL PROGRAM('COMEN01C') COMMAREA(CARDDEMO-COMMAREA)
+   END-IF
+ELSE
+   MOVE 'Wrong Password. Try again ...' TO WS-MESSAGE
+END-IF</code></pre>
+
+            <h3>Example: Transaction Add Validation (CT02)</h3>
+            <pre><code class="language-cobol">WHEN TTYPCDI OF COTRN2AI = SPACES OR LOW-VALUES
+    MOVE 'Type CD can NOT be empty...' TO WS-MESSAGE
+WHEN TCATCDI OF COTRN2AI = SPACES OR LOW-VALUES
+    MOVE 'Category CD can NOT be empty...' TO WS-MESSAGE
+WHEN TRNAMTI OF COTRN2AI = SPACES OR LOW-VALUES
+    MOVE 'Amount can NOT be empty...' TO WS-MESSAGE
+WHEN MZIPI OF COTRN2AI = SPACES OR LOW-VALUES
+    MOVE 'Merchant Zip can NOT be empty...' TO WS-MESSAGE</code></pre>
+
+            <h3>Example: POSTTRAN JCL Interface</h3>
+            <pre><code class="language-jcl">//STEP15 EXEC PGM=CBTRN02C
+//TRANFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS
+//DALYTRAN DD DISP=SHR,DSN=AWS.M2.CARDDEMO.DALYTRAN.PS
+//XREFFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.CARDXREF.VSAM.KSDS
+//DALYREJS DD DISP=(NEW,CATLG,DELETE),DSN=AWS.M2.CARDDEMO.DALYREJS(+1)
+//ACCTFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS
+//TCATBALF DD DISP=SHR,DSN=AWS.M2.CARDDEMO.TCATBALF.VSAM.KSDS</code></pre>
+        </section>
+
+        <section id="data-models">
+            <h2>Data Models And Business Rules</h2>
+
+            <h3>Primary Record Structures</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Copybook</th>
+                            <th>Logical Entity</th>
+                            <th>Key Fields</th>
+                            <th>Notable Fields</th>
+                            <th>Declared Length</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>CVACT01Y</code></td>
+                            <td>Account</td>
+                            <td><code>ACCT-ID</code></td>
+                            <td>status, current balance, credit limits, group id</td>
+                            <td>300</td>
+                        </tr>
+                        <tr>
+                            <td><code>CVACT02Y</code></td>
+                            <td>Card</td>
+                            <td><code>CARD-NUM</code></td>
+                            <td>account id, CVV, embossed name, expiry, active status</td>
+                            <td>150</td>
+                        </tr>
+                        <tr>
+                            <td><code>CVACT03Y</code></td>
+                            <td>Card-Account Cross Reference</td>
+                            <td><code>XREF-CARD-NUM</code></td>
+                            <td><code>XREF-CUST-ID</code>, <code>XREF-ACCT-ID</code></td>
+                            <td>50</td>
+                        </tr>
+                        <tr>
+                            <td><code>CVTRA05Y</code></td>
+                            <td>Posted Transaction</td>
+                            <td><code>TRAN-ID</code></td>
+                            <td>type/category, amount, merchant profile, card number, timestamps</td>
+                            <td>350</td>
+                        </tr>
+                        <tr>
+                            <td><code>CVTRA06Y</code></td>
+                            <td>Daily Staging Transaction</td>
+                            <td><code>DALYTRAN-ID</code></td>
+                            <td>mirrors posted transaction shape for batch posting</td>
+                            <td>350</td>
+                        </tr>
+                        <tr>
+                            <td><code>CSUSR01Y</code></td>
+                            <td>User Security</td>
+                            <td><code>SEC-USR-ID</code></td>
+                            <td>first/last name, password, user type</td>
+                            <td>80</td>
+                        </tr>
+                        <tr>
+                            <td><code>COCOM01Y</code></td>
+                            <td>COMMAREA Contract</td>
+                            <td>from/to program and transaction IDs</td>
+                            <td>user identity, user type, selected entity context</td>
+                            <td>fixed struct</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Business Rules (Observed In Source)</h3>
+            <ul>
+                <li><strong>Sign-on:</strong> User ID and password are mandatory, converted to upper case, and checked against <code>USRSEC</code>.</li>
+                <li><strong>Menu execution:</strong> Option must be numeric, within configured count, and compatible with user type; uninstalled optional programs are reported to user.</li>
+                <li><strong>Transaction add:</strong> Either account id or card number is required; both must be numeric where provided.</li>
+                <li><strong>Transaction add:</strong> type/category/source/description/amount/orig date/proc date/merchant id/name/city/zip are all mandatory before write.</li>
+                <li><strong>Transaction add:</strong> confirmation flag accepts only <code>Y</code>/<code>N</code>; <code>Y</code> triggers write and account update, blank prompts confirmation.</li>
+                <li><strong>Bill payment:</strong> account id required; current balance must be positive to proceed with payment transaction creation.</li>
+                <li><strong>Account update:</strong> extensive validation flags for status, dates, numeric ranges, and zip/state consistency before rewrite.</li>
+                <li><strong>Card update:</strong> account/card filters and expiry validations gate rewrite behavior.</li>
+                <li><strong>Transaction list:</strong> paging uses <code>STARTBR</code> with <code>READNEXT</code>/<code>READPREV</code>; selection moves to detail flow.</li>
+                <li><strong>Batch posting:</strong> invalid daily transactions are moved to reject dataset with failure reason trail.</li>
+                <li><strong>Interest calculation:</strong> uses disclosure-group lookup by account group and transaction category to compute fees/interest.</li>
+                <li><strong>Statement generation:</strong> outputs both plain text and HTML statements from transaction snapshots.</li>
+            </ul>
+
+            <h3>Record Field Dictionary (Core Subset)</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Entity</th>
+                            <th>Field</th>
+                            <th>PIC</th>
+                            <th>Meaning</th>
+                            <th>Rule</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Account</td><td><code>ACCT-ID</code></td><td><code>9(11)</code></td><td>Account identifier</td><td>Primary key for account update/view</td></tr>
+                        <tr><td>Account</td><td><code>ACCT-ACTIVE-STATUS</code></td><td><code>X(1)</code></td><td>Account state marker</td><td>Validated in account update</td></tr>
+                        <tr><td>Account</td><td><code>ACCT-CURR-BAL</code></td><td><code>S9(10)V99</code></td><td>Current balance</td><td>Used by bill payment and transaction posting</td></tr>
+                        <tr><td>Account</td><td><code>ACCT-CREDIT-LIMIT</code></td><td><code>S9(10)V99</code></td><td>Limit amount</td><td>Editable with validation</td></tr>
+                        <tr><td>Account</td><td><code>ACCT-CASH-CREDIT-LIMIT</code></td><td><code>S9(10)V99</code></td><td>Cash limit</td><td>Editable with validation</td></tr>
+                        <tr><td>Account</td><td><code>ACCT-GROUP-ID</code></td><td><code>X(10)</code></td><td>Rate grouping key</td><td>Used in INTCALC disclosure lookup</td></tr>
+                        <tr><td>Card</td><td><code>CARD-NUM</code></td><td><code>X(16)</code></td><td>Card number</td><td>Linked to account via XREF</td></tr>
+                        <tr><td>Card</td><td><code>CARD-ACCT-ID</code></td><td><code>9(11)</code></td><td>Owning account</td><td>Cross-checked during updates</td></tr>
+                        <tr><td>Card</td><td><code>CARD-CVV-CD</code></td><td><code>9(03)</code></td><td>Security code</td><td>Stored field</td></tr>
+                        <tr><td>Card</td><td><code>CARD-EXPIRAION-DATE</code></td><td><code>X(10)</code></td><td>Expiration date</td><td>Date validation during card update</td></tr>
+                        <tr><td>XREF</td><td><code>XREF-CARD-NUM</code></td><td><code>X(16)</code></td><td>Card key</td><td>Primary key path</td></tr>
+                        <tr><td>XREF</td><td><code>XREF-ACCT-ID</code></td><td><code>9(11)</code></td><td>Account key</td><td>Alternate index path (<code>CXACAIX</code>)</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-ID</code></td><td><code>X(16)</code></td><td>Transaction key</td><td>Generated from latest key for new posts</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-TYPE-CD</code></td><td><code>X(02)</code></td><td>Type code</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-CAT-CD</code></td><td><code>9(04)</code></td><td>Category code</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-SOURCE</code></td><td><code>X(10)</code></td><td>Source channel</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-DESC</code></td><td><code>X(100)</code></td><td>Description</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-AMT</code></td><td><code>S9(09)V99</code></td><td>Amount</td><td>Required in CT02 and bill payment records</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-MERCHANT-ID</code></td><td><code>9(09)</code></td><td>Merchant id</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-MERCHANT-NAME</code></td><td><code>X(50)</code></td><td>Merchant name</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-MERCHANT-CITY</code></td><td><code>X(50)</code></td><td>Merchant city</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-MERCHANT-ZIP</code></td><td><code>X(10)</code></td><td>Merchant zip</td><td>Required in CT02</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-CARD-NUM</code></td><td><code>X(16)</code></td><td>Linked card</td><td>Derived via xref if account provided</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-ORIG-TS</code></td><td><code>X(26)</code></td><td>Original timestamp</td><td>Set at creation</td></tr>
+                        <tr><td>Transaction</td><td><code>TRAN-PROC-TS</code></td><td><code>X(26)</code></td><td>Processing timestamp</td><td>Set at creation/update path</td></tr>
+                        <tr><td>User security</td><td><code>SEC-USR-ID</code></td><td><code>X(08)</code></td><td>User id</td><td>Sign-on key</td></tr>
+                        <tr><td>User security</td><td><code>SEC-USR-PWD</code></td><td><code>X(08)</code></td><td>Password</td><td>Compared on CC00</td></tr>
+                        <tr><td>User security</td><td><code>SEC-USR-TYPE</code></td><td><code>X(01)</code></td><td>Role marker</td><td><code>A</code>=admin, <code>U</code>=user</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="configuration">
+            <h2>Configuration And Environment Variables</h2>
+
+            <h3>Dataset And Resource Naming Pattern</h3>
+            <p>
+                The sample environment uses high-level qualifier <code>AWS.M2.CARDDEMO</code>. CSD and JCL definitions
+                assume standard names for VSAM clusters and sequential files.
+            </p>
+
+            <h3>CICS Resource Configuration Highlights</h3>
+            <ul>
+                <li>Files such as <code>ACCTDAT</code>, <code>CARDDAT</code>, <code>CCXREF</code>, <code>TRANSACT</code>, and <code>USRSEC</code> are enabled for read/update/add/delete with locking update model.</li>
+                <li>Mapsets are registered with group <code>CARDDEMO</code> and normal usage mode.</li>
+                <li>Programs run in user key, CICS API, quasi-reentrant style.</li>
+                <li>Internal reader queue is exposed as extra-partition TD queue <code>JOBS</code>.</li>
+            </ul>
+
+            <h3>Scheduler Configuration Highlights</h3>
+            <ul>
+                <li>CA7 chain example: <code>CLOSEFIL</code> -> <code>POSTTRAN</code> -> <code>WAITSTEP</code> -> <code>OPENFIL</code>.</li>
+                <li>Control-M daily folder mirrors close/backup/wait/open orchestration.</li>
+                <li>Monthly folder chains close -> <code>INTCALC</code> -> <code>COMBTRAN</code> -> wait -> open.</li>
+                <li>Weekly folders support disclosure and transaction-type refresh dependencies.</li>
+            </ul>
+
+            <h3>Operational Parameters</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Area</th>
+                            <th>Parameter</th>
+                            <th>Observed Value/Pattern</th>
+                            <th>Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>JCL</td><td><code>MSGCLASS</code></td><td><code>0</code>, <code>H</code></td><td>Log routing for batch jobs</td></tr>
+                        <tr><td>JCL</td><td><code>NOTIFY=&amp;SYSUID</code></td><td>Enabled</td><td>User notification on completion</td></tr>
+                        <tr><td>JCL</td><td><code>PARM</code> for INTCALC</td><td>Example <code>2022071800</code></td><td>Date-driven interest run context</td></tr>
+                        <tr><td>CICS</td><td><code>TASKDATALOC</code></td><td><code>ANY</code></td><td>Data area placement</td></tr>
+                        <tr><td>CICS</td><td><code>CONCURRENCY</code></td><td><code>QUASIRENT</code></td><td>Program concurrency model</td></tr>
+                        <tr><td>CICS</td><td><code>CMDSEC/RESSEC</code></td><td><code>NO</code> (in supplied CSD)</td><td>Security behavior by transaction definition</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Environment Variables</h3>
+            <p>
+                There are no modern application-level OS environment variables in this module. Runtime behavior is
+                configured through CICS resource definitions, dataset names, scheduler metadata, and JCL parameters.
+            </p>
+        </section>
+
+        <section id="development-guidelines">
+            <h2>Development Guidelines And Patterns</h2>
+
+            <h3>Coding Patterns</h3>
+            <ul>
+                <li>Keep COMMAREA compatibility stable; use <code>COCOM01Y</code> as single contract source.</li>
+                <li>When adding map fields, update BMS source and generated copybook consumers together.</li>
+                <li>Follow program re-entry pattern using <code>CDEMO-PGM-CONTEXT</code> and EIBCALEN checks.</li>
+                <li>Always provide map redisplay messages for invalid input (do not abend for user-data errors).</li>
+                <li>For browse-driven screens, preserve <code>STARTBR</code>/<code>READNEXT</code>/<code>READPREV</code> paging behavior.</li>
+            </ul>
+
+            <h3>Validation Patterns</h3>
+            <ul>
+                <li>Mandatory input check first.</li>
+                <li>Format/numeric/date checks second.</li>
+                <li>Data existence checks (VSAM read) third.</li>
+                <li>Only then perform write/rewrite and balance updates.</li>
+                <li>Use cursor placement (<code>-1</code> map length field) to guide user correction.</li>
+            </ul>
+
+            <h3>Batch Patterns</h3>
+            <ul>
+                <li>Close online files before jobs that restructure/replace data.</li>
+                <li>Keep reject output explicit and traceable (<code>DALYREJS</code> trailers).</li>
+                <li>Use GDG outputs for historical traceability and recovery.</li>
+                <li>Re-open files for online path after job chain completion.</li>
+            </ul>
+
+            <h3>Error Handling Pattern Example</h3>
+            <pre><code class="language-cobol">EVALUATE WS-RESP-CD
+    WHEN 0
+        CONTINUE
+    WHEN 13
+        MOVE 'User not found. Try again ...' TO WS-MESSAGE
+        MOVE -1 TO USERIDL OF COSGN0AI
+        PERFORM SEND-SIGNON-SCREEN
+    WHEN OTHER
+        MOVE 'Unable to verify the User ...' TO WS-MESSAGE
+        MOVE -1 TO USERIDL OF COSGN0AI
+        PERFORM SEND-SIGNON-SCREEN
+END-EVALUATE</code></pre>
+
+            <h3>Navigation Pattern Example</h3>
+            <pre><code class="language-cobol">EVALUATE EIBAID
+    WHEN DFHENTER
+        PERFORM PROCESS-ENTER-KEY
+    WHEN DFHPF3
+        MOVE CDEMO-FROM-PROGRAM TO CDEMO-TO-PROGRAM
+        PERFORM RETURN-TO-PREV-SCREEN
+    WHEN DFHPF4
+        PERFORM CLEAR-CURRENT-SCREEN
+    WHEN OTHER
+        MOVE CCDA-MSG-INVALID-KEY TO WS-MESSAGE
+        PERFORM SEND-TRNADD-SCREEN
+END-EVALUATE</code></pre>
+        </section>
+
+        <section id="usage-examples">
+            <h2>Usage Examples And Code Snippets</h2>
+
+            <h3>Example 1: End-To-End Cardholder Session</h3>
+            <pre><code class="language-text">Step 1: Enter CC00
+Step 2: Input USER0001 / PASSWORD on COSGN00
+Step 3: CM00 displays options from COMEN02Y
+Step 4: Choose 8 (CT02 transaction add)
+Step 5: Provide account id or card number + transaction fields
+Step 6: Set CONFIRM=Y and press ENTER
+Step 7: Record is written to TRANSACT and balance is updated
+Step 8: Use CT01 to retrieve the new transaction by id</code></pre>
+
+            <h3>Example 2: Bill Payment Flow</h3>
+            <pre><code class="language-text">Transaction: CB00
+Input: ACTIDIN + CONFIRM (Y/N)
+Read: ACCTDAT for balance
+Check: balance > 0
+If Y: create TRANSACT record (type 02 / category 2 / source POS TERM)
+Update: ACCT-CURR-BAL = ACCT-CURR-BAL - TRAN-AMT
+Redisplay: success or correction message on COBIL00 map</code></pre>
+
+            <h3>Example 3: POSTTRAN Execution Sequence</h3>
+            <pre><code class="language-text">CLOSEFIL
+POSTTRAN (CBTRN02C)
+  - OPEN DALYTRAN input
+  - OPEN TRANSACT output
+  - READ each DALYTRAN record
+  - VALIDATE card/account/category balance references
+  - POST valid records; write rejects to DALYREJS
+INTCALC (CBACT04C)
+COMBTRAN
+CREASTMT (CBSTM03A)
+OPENFIL</code></pre>
+
+            <h3>Example 4: COMMAREA Reference</h3>
+            <pre><code class="language-cobol">01 CARDDEMO-COMMAREA.
+   05 CDEMO-GENERAL-INFO.
+      10 CDEMO-FROM-TRANID   PIC X(04).
+      10 CDEMO-FROM-PROGRAM  PIC X(08).
+      10 CDEMO-TO-TRANID     PIC X(04).
+      10 CDEMO-TO-PROGRAM    PIC X(08).
+      10 CDEMO-USER-ID       PIC X(08).
+      10 CDEMO-USER-TYPE     PIC X(01).
+      10 CDEMO-PGM-CONTEXT   PIC 9(01).</code></pre>
+
+            <h3>Example 5: Transaction Browse API</h3>
+            <pre><code class="language-cobol">EXEC CICS STARTBR
+     FILE(WS-TRANSACT-FILE)
+     RIDFLD(TRAN-ID)
+END-EXEC.
+
+EXEC CICS READNEXT
+     FILE(WS-TRANSACT-FILE)
+     INTO(TRAN-RECORD)
+END-EXEC.
+
+EXEC CICS READPREV
+     FILE(WS-TRANSACT-FILE)
+     INTO(TRAN-RECORD)
+END-EXEC.</code></pre>
+
+            <h3>Example 6: Report Submission Through TDQ</h3>
+            <pre><code class="language-cobol">MOVE "//STEP10 EXEC PROC=TRANREPT" TO JCL-RECORD
+EXEC CICS WRITEQ TD
+     QUEUE('JOBS')
+     FROM(JCL-RECORD)
+     LENGTH(80)
+END-EXEC.</code></pre>
+        </section>
+
+        <section id="api-reference-matrix">
+            <h2>Detailed API Reference Matrix</h2>
+            <p class="small">This matrix is intentionally verbose so teams can derive user stories and test cases directly.</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Interface</th>
+                            <th>Request Fields</th>
+                            <th>Response/Screen Fields</th>
+                            <th>PF Keys</th>
+                            <th>Storage Touchpoints</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>API-01</td><td><code>CC00/COSGN0A</code></td><td><code>USERID</code>, <code>PASSWD</code></td><td><code>ERRMSG</code>, header date/time/system</td><td>ENTER, PF3</td><td><code>USRSEC</code> READ</td></tr>
+                        <tr><td>API-02</td><td><code>CM00/COMEN1A</code></td><td><code>OPTION</code></td><td>option lines + <code>ERRMSG</code></td><td>ENTER, PF3</td><td>COMMAREA routing</td></tr>
+                        <tr><td>API-03</td><td><code>CAUP</code></td><td>account filter + editable account fields</td><td>validation errors + persisted values</td><td>ENTER, PF3, PF4</td><td><code>ACCTDAT/CUSTDAT/CCXREF</code></td></tr>
+                        <tr><td>API-04</td><td><code>CAVW</code></td><td>account/card key</td><td>account view data set</td><td>ENTER, PF3</td><td><code>ACCTDAT/CUSTDAT/CCXREF</code></td></tr>
+                        <tr><td>API-05</td><td><code>CCLI</code></td><td>search or browse controls</td><td>list rows + selection markers</td><td>ENTER, PF3, PF7, PF8</td><td><code>CARDDAT</code> browse</td></tr>
+                        <tr><td>API-06</td><td><code>CCUP</code></td><td>card/account filter + card attributes</td><td>validation + update confirmation</td><td>ENTER, PF3, PF4</td><td><code>CARDDAT/CCXREF/CXACAIX</code></td></tr>
+                        <tr><td>API-07</td><td><code>CT00</code></td><td>account/card filter, selection action</td><td>paged transaction rows</td><td>ENTER, PF3, PF7, PF8</td><td><code>TRANSACT</code> STARTBR/READNEXT/READPREV</td></tr>
+                        <tr><td>API-08</td><td><code>CT01</code></td><td>transaction id</td><td>detailed transaction record</td><td>ENTER, PF3</td><td><code>TRANSACT</code> READ</td></tr>
+                        <tr><td>API-09</td><td><code>CT02/COTRN2A</code></td><td>account/card + 11 data fields + confirm</td><td>errors, derived fields, success message</td><td>ENTER, PF3, PF4, PF5</td><td><code>CCXREF/CXACAIX/TRANSACT/ACCTDAT</code></td></tr>
+                        <tr><td>API-10</td><td><code>CB00/COBIL0A</code></td><td>account id, confirm</td><td>current balance and result message</td><td>ENTER, PF3, PF4</td><td><code>ACCTDAT/CCXREF/TRANSACT</code></td></tr>
+                        <tr><td>API-11</td><td><code>CR00/CORPT0A</code></td><td>monthly/yearly/custom date options</td><td>submission status</td><td>ENTER, PF3</td><td>TDQ <code>JOBS</code>, JCL strings</td></tr>
+                        <tr><td>API-12</td><td><code>POSTTRAN</code> batch</td><td>daily transaction file + xref/account/category inputs</td><td>posted rows + reject file + return code</td><td>N/A</td><td><code>DALYTRAN/TRANSACT/ACCTFILE/TCATBALF</code></td></tr>
+                        <tr><td>API-13</td><td><code>INTCALC</code> batch</td><td>category balances + disclosure groups + date parm</td><td>interest transactions and updated balances</td><td>N/A</td><td><code>TCATBALF/DISCGRP/ACCTFILE/TRANSACT</code></td></tr>
+                        <tr><td>API-14</td><td><code>CREASTMT</code> batch</td><td>transactions, xref, account, customer</td><td>text + HTML statements</td><td>N/A</td><td><code>TRXFL/STATEMNT.PS/STATEMNT.HTML</code></td></tr>
+                        <tr><td>API-15</td><td><code>TRANBKP</code> batch</td><td>existing TRANSACT cluster</td><td>backup GDG + recreated cluster</td><td>N/A</td><td><code>TRANSACT.VSAM.KSDS</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="testing-and-verification">
+            <h2>Verification Checklist</h2>
+            <ul>
+                <li>Confirm <code>CC00</code> routes admin to <code>CA00</code> and standard user to <code>CM00</code>.</li>
+                <li>Confirm <code>CM00</code> blocks admin-only menu entries for non-admin users.</li>
+                <li>Confirm <code>CT02</code> rejects missing mandatory fields with cursor focus on failing field.</li>
+                <li>Confirm <code>CT00</code> paging uses both forward and backward browse without duplicate rows.</li>
+                <li>Confirm <code>CB00</code> denies payment when account balance is zero/non-positive.</li>
+                <li>Confirm <code>CR00</code> writes internal-reader job records and displays submission message.</li>
+                <li>Confirm <code>POSTTRAN</code> produces reject file records for invalid input rows.</li>
+                <li>Confirm <code>INTCALC</code> updates account values and emits generated transactions.</li>
+                <li>Confirm <code>CREASTMT</code> outputs both plain text and HTML statements.</li>
+                <li>Confirm scheduler chain closes files before processing and opens files after completion.</li>
+            </ul>
+        </section>
+
+        <section id="story-mapping">
+            <h2>User Story Mapping Aids</h2>
+            <div class="two-col">
+                <article class="card">
+                    <h3>Cardholder Story Seeds</h3>
+                    <ul>
+                        <li>As a cardholder, I want <code>CT02</code> to validate merchant fields before save so transaction quality is preserved.</li>
+                        <li>As a cardholder, I want <code>CB00</code> to show my current balance before confirmation so I avoid accidental payment.</li>
+                        <li>As a cardholder, I want <code>CT00</code> to page transactions reliably so I can browse long histories.</li>
+                    </ul>
+                </article>
+                <article class="card">
+                    <h3>Operations Story Seeds</h3>
+                    <ul>
+                        <li>As operations, I want <code>POSTTRAN</code> rejects to contain reason trailers so bad records can be remediated quickly.</li>
+                        <li>As operations, I want <code>CREASTMT</code> HTML output generated nightly so downstream channels can consume statements.</li>
+                        <li>As operations, I want scheduler dependency conditions visible so reruns can be managed safely.</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <section id="appendix-snippets">
+            <h2>Appendix: Additional Source Snippets</h2>
+
+            <h3>Snippet A: Menu Option Metadata</h3>
+            <pre><code class="language-cobol">05 CDEMO-MENU-OPT-COUNT           PIC 9(02) VALUE 11.
+10 FILLER PIC 9(02) VALUE 1.
+10 FILLER PIC X(35) VALUE 'Account View                       '.
+10 FILLER PIC X(08) VALUE 'COACTVWC'.
+...
+10 FILLER PIC 9(02) VALUE 11.
+10 FILLER PIC X(35) VALUE 'Pending Authorization View         '.
+10 FILLER PIC X(08) VALUE 'COPAUS0C'.</code></pre>
+
+            <h3>Snippet B: Batch Program Main Loop (POSTTRAN)</h3>
+            <pre><code class="language-cobol">PERFORM UNTIL END-OF-FILE = 'Y'
+    PERFORM 1000-DALYTRAN-GET-NEXT
+    IF END-OF-FILE = 'N'
+       ADD 1 TO WS-TRANSACTION-COUNT
+       PERFORM 1500-VALIDATE-TRAN
+       IF WS-VALIDATION-FAIL-REASON = 0
+          PERFORM 2000-POST-TRANSACTION
+       ELSE
+          ADD 1 TO WS-REJECT-COUNT
+          PERFORM 2500-WRITE-REJECT-REC
+       END-IF
+    END-IF
+END-PERFORM</code></pre>
+
+            <h3>Snippet C: Statement Program Output Formats</h3>
+            <pre><code class="language-cobol">* Function: Print Account Statements from Transaction data
+* in two formats : 1/plain text and 2/HTML
+
+SELECT STMT-FILE ASSIGN TO STMTFILE.
+SELECT HTML-FILE ASSIGN TO HTMLFILE.
+...
+88 HTML-L01 VALUE '&lt;!DOCTYPE html&gt;'.
+88 HTML-L02 VALUE '&lt;html lang="en"&gt;'.
+88 HTML-L80 VALUE '&lt;/html&gt;'.</code></pre>
         </section>
 
         <footer>
-            <p><a href="../../index.html">← Back to Documentation Index</a></p>
-            <p><em>Last updated: 2026-03-04</em></p>
+            Last reviewed: 2026-03-05T15:30:27Z
         </footer>
     </div>
 </body>

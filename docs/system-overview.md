@@ -40,9 +40,52 @@
 
 ### 1. Core Platform
 **ID:** `core-platform`  
-**Purpose:** Serve the base CardDemo experience: authentication, account/card CRUD, transaction posting, billing, and batch orchestration over VSAM data.  
-**Key Components:** BMS mapsets (`COSGN00`, `COMEN01`, `COACTVW`, `COTRN02`, `COBIL00`), COBOL programs (`COSGN00C`, `COACTVWC`, `COTRN02C`, `CBIL00C`, `COPAUS0C` when pending authorizations are enabled), JCL batch jobs (`POSTTRAN`, `CREASTMT`, `TRANBKP`, `OPENFIL`, `CLOSEFIL`), scheduler definitions (`app/scheduler/*.ca7`), shared copybooks (`app/cpy/*.cpy`).  
-**Public APIs:** CICS transactions `CC00` (sign-on), `CM00` (main menu), `CAUP/CCUP` (account/card updates), `CT00/CT01/CT02` (transaction list/view/add), `CB00` (bill payment), `CR00` (reports). Batch interfaces include `POSTTRAN`, `CREASTMT`, `TRANEXTR`, `INTCALC`, `TRANBKP`, `TRANIDX`.  
+**Purpose:** Deliver the mandatory CardDemo runtime baseline: user authentication, role-aware menu routing, account/card maintenance, transaction browse/add flows, bill payment posting, and scheduled nightly/monthly batch processing over VSAM datasets. This module is the execution foundation for all optional extensions and remains fully operational when DB2/IMS/MQ add-ons are not enabled.  
+**Business Context:**  
+- This module is where cardholder and admin journeys start (`CC00` sign-on and menu dispatch), so user stories in optional modules assume core-platform already manages identity/context correctly via COMMAREA (`COCOM01Y`).  
+- It controls the canonical transaction ledger (`TRANSACT`) used by online screens and downstream statement/interest jobs, making it the source of truth for posting outcomes.  
+- It includes operational job control (close-file/process/open-file) that protects VSAM consistency during batch windows.  
+**Key Components:**  
+- **CICS resource model (`app/csd/CARDDEMO.CSD`):** defines VSAM files (`ACCTDAT`, `CARDDAT`, `CUSTDAT`, `CCXREF`, `CXACAIX`, `TRANSACT`, `USRSEC`), mapsets, programs, and transaction bindings.  
+- **Online COBOL programs (`app/cbl`):** `COSGN00C` (sign-on), `COMEN01C` (menu/routing), `COACTVWC`/`COACTUPC` (account view/update), `COCRDLIC`/`COCRDUPC` (card list/update), `COTRN00C`/`COTRN01C`/`COTRN02C` (transaction list/view/add), `COBIL00C` (bill payment), `CORPT00C` (report job submit).  
+- **BMS mapsets (`app/bms`):** `COSGN00`, `COMEN01`, `COACTVW`, `COACTUP`, `COCRDLI`, `COCRDUP`, `COTRN00`, `COTRN01`, `COTRN02`, `COBIL00`, `CORPT00`; each map embeds field-level contracts and PF-key guidance for online validation loops.  
+- **Batch orchestration (`app/jcl` + `app/cbl`):** `POSTTRAN` (`CBTRN02C`) posts daily transactions and writes rejects, `INTCALC` (`CBACT04C`) computes interest/fees, `CREASTMT` (`CBSTM03A`) generates text+HTML statements, `TRANBKP` handles transaction backup/redefine, `OPENFIL`/`CLOSEFIL` gate file availability.  
+- **Schedulers (`app/scheduler`):** CA7 and Control-M definitions chain close -> process -> wait -> open patterns for daily/monthly/weekly operations.  
+- **Shared data contracts (`app/cpy`):** `CVACT01Y` (account), `CVACT02Y` (card), `CVACT03Y` (xref), `CVTRA05Y` (posted transactions), `CVTRA06Y` (daily staging), `CSUSR01Y` (user security), `COCOM01Y` (COMMAREA).  
+**Public APIs and Interfaces:**  
+- **CICS Transactions:**  
+  - `CC00` -> `COSGN00C`: validates user credentials in `USRSEC`, upper-cases credentials, routes to admin/user menus.  
+  - `CM00` -> `COMEN01C`: validates numeric option selection, enforces role access, checks optional program availability (`EXEC CICS INQUIRE PROGRAM`).  
+  - `CAUP`/`CAVW` -> `COACTUPC`/`COACTVWC`: account update/view APIs backed by `ACCTDAT`, `CUSTDAT`, and xref datasets.  
+  - `CCLI`/`CCUP` -> `COCRDLIC`/`COCRDUPC`: card listing/update APIs with xref integrity checks.  
+  - `CT00`/`CT01`/`CT02` -> transaction browse/detail/add APIs using `STARTBR`, `READNEXT`, `READPREV`, `READ`, `WRITE`.  
+  - `CB00` -> `COBIL00C`: confirms bill payment (`Y/N`) and posts bill-payment transaction if balance exists.  
+  - `CR00` -> `CORPT00C`: writes report JCL to extra-partition TD queue (`JOBS`) for internal reader submission.  
+- **Batch Interfaces:** `POSTTRAN`, `INTCALC`, `COMBTRAN`, `CREASTMT`, `TRANBKP`, `TRANIDX`, `OPENFIL`, `CLOSEFIL`.  
+- **Operational Queue Interface:** TD queue `JOBS` for CR00-initiated report submissions.  
+**Dependencies:**  
+- **Internal module dependencies:**  
+  - `transaction-type-management` refresh jobs influence transaction metadata consumed by posting/list flows.  
+  - `authorization` appears as optional menu target (`COPAUS0C`) and is checked at runtime before routing.  
+  - `mq-account-extractions` shares base account/card VSAM structures but is not required for core online paths.  
+- **External platform dependencies:** CICS, VSAM KSDS/AIX, JCL utilities (IDCAMS/SORT), RACF-aligned sign-on conventions, CA7/Control-M scheduler infrastructure.  
+**Data Models and Structures:**  
+- **Account (`CVACT01Y`):** `ACCT-ID`, status, current/cycle balances, limits, lifecycle dates, group id.  
+- **Card (`CVACT02Y`):** `CARD-NUM`, linked account id, cvv, embossing fields, expiration, active status.  
+- **Cross-reference (`CVACT03Y`):** card -> customer/account mapping, plus alternate index path by account (`CXACAIX`).  
+- **Transaction (`CVTRA05Y`):** `TRAN-ID`, type/category, merchant profile, amount, card number, orig/proc timestamps.  
+- **Daily transaction staging (`CVTRA06Y`):** batch input shape for `POSTTRAN`.  
+- **User security (`CSUSR01Y`):** user id, password, role type.  
+- **Navigation contract (`COCOM01Y`):** source/target transaction+program, user identity/type, selected entity context.  
+**Module-Specific Business Rules:**  
+- Sign-on requires both user id and password; invalid/missing credentials redisplay map with cursor placement on failing field.  
+- Menu selection must be numeric and within configured option count; unauthorized/admin-only options are blocked for user role.  
+- Transaction add (`CT02`) requires either account id or card number and enforces mandatory input for type/category/source/description/amount/orig date/proc date/merchant fields before write.  
+- Bill payment (`CB00`) requires explicit confirmation and refuses posting when current balance is non-positive.  
+- Account/card updates perform deep field validation (date, numeric, and address/zip checks) before any `REWRITE`.  
+- Transaction listing (`CT00`) uses browse semantics with forward/backward pagination (`STARTBR` + `READNEXT`/`READPREV`) and selection into detail view.  
+- `POSTTRAN` writes invalid daily records to `DALYREJS` with validation trailers and returns non-zero completion when rejects exist.  
+- `INTCALC` derives rates from disclosure-group data and produces system transactions while updating account balances.  
 **User Story Examples:**  
 - As a cardholder, I want to update my mailing address via `CAUP` so that statements route to my new location.  
 - As a payments analyst, I want nightly `POSTTRAN` and `INTCALC` to finish before 4:00 AM so downstream reporting jobs can start.  
