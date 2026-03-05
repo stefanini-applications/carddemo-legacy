@@ -1,104 +1,1912 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Core Platform - User Story Development Guide</title>
+    <meta name="last-updated" content="2026-03-05T16:53:23Z">
+    <title>core-platform - Module Documentation</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f8f9fc; color:#1f2933; }
-        .container { max-width: 1080px; margin: 0 auto; padding: 24px 20px 40px; }
-        .header { padding: 32px; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; margin-bottom: 24px; }
-        section { margin-bottom: 32px; }
-        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-        ul { padding-left: 20px; }
-        code, pre { background:#0f172a;color:#f1f5f9;padding:8px;border-radius:6px;display:block; }
-        .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
-        footer { margin-top:24px; font-size:0.9rem; color:#475569; }
+        :root {
+            --bg: #1a1a1a;
+            --surface: #242424;
+            --surface-2: #2d2d2d;
+            --text: #e0e0e0;
+            --muted: #b5b5b5;
+            --link: #64b5f6;
+            --h1: #4fc3f7;
+            --h2: #81c784;
+            --h3: #ffcc80;
+            --border: #3a3a3a;
+            --ok: #66bb6a;
+            --warn: #ffb74d;
+            --bad: #ef5350;
+            --code: #111;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        .layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        nav {
+            margin-bottom: 18px;
+        }
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .hero {
+            border: 1px solid var(--border);
+            background: linear-gradient(145deg, #1f1f1f 0%, #292929 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: var(--h1);
+            border-bottom: 2px solid var(--h1);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        h2 {
+            color: var(--h2);
+            margin-top: 34px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+        h3 {
+            color: var(--h3);
+            margin-top: 24px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+        code {
+            background-color: var(--surface-2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #f8f8f2;
+        }
+        pre {
+            background-color: var(--code);
+            color: #f8f8f2;
+            padding: 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+        .k { color: #66d9ef; }
+        .s { color: #a6e22e; }
+        .n { color: #f8f8f2; }
+        .c { color: #75715e; }
+        .ok { color: var(--ok); }
+        .warn { color: var(--warn); }
+        .bad { color: var(--bad); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            background: var(--surface);
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+        th {
+            background: #303030;
+        }
+        .small {
+            font-size: 0.92rem;
+            color: var(--muted);
+        }
+        @media (max-width: 720px) {
+            .layout { padding: 14px; }
+            h1 { font-size: 1.6rem; }
+            h2 { font-size: 1.2rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>📦 Core Platform</h1>
-            <p>Guide for developing user stories anchored on the base CardDemo experience (authentication, VSAM CRUD, bills, and batch orchestration).</p>
-        </header>
+<div class="layout">
+    <nav><a href="../../index.html">← Back to Index</a></nav>
 
-        <section class="overview">
-            <h2>📋 Overview</h2>
-            <p><strong>Purpose:</strong> Deliver the standard cardholder and admin journeys—sign-on, account/card maintenance, transaction posting, bill payments, and batch reporting—using CICS/VSAM primitives.</p>
-            <p><strong>Business Context:</strong> This is the foundational module that every optional extension builds on, so successful user stories here unlock reliable online operations and nightly batch runs.</p>
-        </section>
+    <header class="hero">
+        <h1>core-platform</h1>
+        <p><strong>Module role:</strong> Base CardDemo runtime for sign-on, user/admin menu routing, account/card maintenance, transaction posting, bill payments, and batch lifecycle orchestration.</p>
+        <p><strong>Scope boundary:</strong> This page documents only the core module in <code>app/cbl</code>, <code>app/bms</code>, <code>app/cpy*</code>, <code>app/csd</code>, <code>app/jcl</code>, <code>app/proc</code>, and <code>app/scheduler</code>.</p>
+        <p class="small">Source-backed update generated from COBOL, BMS, CSD, JCL, PROC, and scheduler artifacts in the current repository checkout.</p>
+    </header>
 
-        <section class="us-guide">
-            <h2>🎯 User Story Development Guide</h2>
-
-            <h3>📝 Module-Specific US Templates</h3>
-            <ul>
-                <li><strong>Account Maintenance:</strong> As a cardholder, I want to update my billing address via the `CAUP` screen so subsequent statements reflect the new data.</li>
-                <li><strong>Transaction Posting:</strong> As an operations analyst, I want `CT02` to post a debit transaction with accurate posting date so the ledger balances before nightly processing.</li>
-                <li><strong>Billing & Reports:</strong> As a finance user, I want `CB00` to confirm payment success and queue the record for `CREASTMT`.</li>
-            </ul>
-
-            <h3>⚡ Development Acceleration Factors</h3>
-            <ul>
-                <li><strong>BMS map reuse:</strong> `COSGN00`, `COMEN01`, `COACTVW`, `COTRN02` already define layout/keys for standard journeys; extend them instead of rebuilding from scratch.</li>
-                <li><strong>Shared copybooks:</strong> Copybooks in `app/cpy` describe accounts, cards, and transactions; adding fields here propagates to multiple COBOL and batch programs.</li>
-                <li><strong>Batch templates:</strong> JCL templates and scheduler definitions (CA7/Control-M) exist for `POSTTRAN`, `TRANEXTR`, and `CREASTMT`, making job sequencing predictable.</li>
-            </ul>
-
-            <h3>📊 Complexity Guidelines</h3>
-            <ul>
-                <li><strong>Simple (1-2 pts):</strong> Add a new field to an existing BMS map and COBOL structure (e.g., a status flag on `CAUP`).</li>
-                <li><strong>Medium (3-5 pts):</strong> Enhance `CT02` to support a new posting type that requires an extra VSAM lookup.</li>
-                <li><strong>Complex (6-8 pts):</strong> Introduce a multi-step batch job change that alters `POSTTRAN` and `CREASTMT` dependencies or migrates data between VSAM files.</li>
-            </ul>
-        </section>
-
-        <section class="technical">
-            <h2>🔧 Technical Foundation</h2>
-
-            <div class="grid">
-                <div>
-                    <h3>🏗️ Key Components</h3>
-                    <ul>
-                        <li><strong>COBOL programs:</strong> `COSGN00C`, `COACTVWC`, `COTRN02C`, `COPAUS0C`.</li>
-                        <li><strong>BMS mapsets:</strong> `COSGN00`, `COMEN01`, `COACTUP`, `COTRN*`, `COPAU00`.</li>
-                        <li><strong>Batch jobs:</strong> `POSTTRAN`, `CREASTMT`, `TRANBKP`, `INTCALC`, `TRANIDX`.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>🔗 Dependencies</h3>
-                    <ul>
-                        <li><strong>VSAM datasets:</strong> `CARDDEMO.ACCTDATA.PS`, `CARDDATA`, `TRANSACT.VSAM.KSDS`.</li>
-                        <li><strong>JCL templates:</strong> `app/jcl/*` for compile and run.</li>
-                        <li><strong>Authentication:</strong> RACF (`ADMIN001`, `USER0001`).</li>
-                    </ul>
-                </div>
+    <section>
+        <h2>Module Overview and Purpose</h2>
+        <div class="card">
+            <p>The <code>core-platform</code> module implements the baseline credit-card processing lifecycle used by all optional extensions. User authentication starts in <code>CC00/COSGN00C</code>, then routes to either <code>CM00/COMEN01C</code> for cardholder operations or <code>CA00/COADM01C</code> for admin operations.</p>
+            <p>Business operations are split between online CICS transactions and nightly/monthly batch chains. Online transactions update VSAM in near-real-time, while batch jobs reconcile, post, summarize, and report data with deterministic scheduling dependencies.</p>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h3>Primary business outcomes</h3>
+                <ul>
+                    <li>Authenticate users against <code>USRSEC</code>.</li>
+                    <li>Maintain account/customer/card master data through CICS maps.</li>
+                    <li>Add and browse card transactions in <code>TRANSACT</code>.</li>
+                    <li>Accept and post bill payments from online flow.</li>
+                    <li>Run batch posting, interest calculation, statement generation, and reporting.</li>
+                </ul>
             </div>
+            <div class="card">
+                <h3>Runtime profile</h3>
+                <ul>
+                    <li>Online: CICS + BMS + VSAM KSDS.</li>
+                    <li>Batch: COBOL + SORT + IDCAMS + scheduler chains.</li>
+                    <li>Contracts: copybooks in <code>app/cpy</code> and <code>app/cpy-bms</code>.</li>
+                    <li>Operations: CICS file close/open around batch windows.</li>
+                    <li>Scheduling: CA7 and Control-M definitions in <code>app/scheduler</code>.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
 
-            <h3>🌐 Public Interfaces</h3>
-            <pre><code>
-CC00 - Sign-on and dispatch
-CAUP / CCUP - Account/card maintenance
-CT02 - Post transaction
-CB00 - Bill payment
-POSTTRAN / CREASTMT - Batch posting and statement generation
-            </code></pre>
-        </section>
+    <section>
+        <h2>Architectural Context</h2>
+        <div class="card">
+            <h3>Execution model</h3>
+            <ol>
+                <li><strong>Sign-on:</strong> <code>COSGN00C</code> validates user credentials from <code>USRSEC</code>.</li>
+                <li><strong>Menu dispatch:</strong> <code>COMEN01C</code> evaluates selected option and <code>XCTL</code>s to target program.</li>
+                <li><strong>Business transaction:</strong> target program performs map receive, validation, VSAM read/update/write, and map send.</li>
+                <li><strong>Nightly/monthly processing:</strong> batch jobs run with explicit dependencies and data handoffs.</li>
+            </ol>
+        </div>
+        <div class="card">
+            <h3>CICS resources (from <code>app/csd/CARDDEMO.CSD</code>)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Resource type</th>
+                        <th>Examples</th>
+                        <th>Responsibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>FILE</td>
+                        <td><code>ACCTDAT</code>, <code>CARDDAT</code>, <code>CCXREF</code>, <code>CXACAIX</code>, <code>TRANSACT</code>, <code>USRSEC</code></td>
+                        <td>VSAM access for online programs.</td>
+                    </tr>
+                    <tr>
+                        <td>MAPSET</td>
+                        <td><code>COSGN00</code>, <code>COMEN01</code>, <code>COACTUP</code>, <code>COTRN02</code>, <code>COBIL00</code>, <code>CORPT00</code></td>
+                        <td>Terminal UI definitions and message areas.</td>
+                    </tr>
+                    <tr>
+                        <td>PROGRAM</td>
+                        <td><code>COSGN00C</code>, <code>COMEN01C</code>, <code>COACTUPC</code>, <code>COTRN02C</code>, <code>COBIL00C</code>, <code>CORPT00C</code></td>
+                        <td>CICS transaction logic and VSAM orchestration.</td>
+                    </tr>
+                    <tr>
+                        <td>TRANSACTION</td>
+                        <td><code>CC00</code>, <code>CM00</code>, <code>CAUP</code>, <code>CCUP</code>, <code>CT00</code>, <code>CT01</code>, <code>CT02</code>, <code>CB00</code>, <code>CR00</code>, <code>CA00</code>, <code>CU00-03</code></td>
+                        <td>Public online entry points.</td>
+                    </tr>
+                    <tr>
+                        <td>TDQUEUE</td>
+                        <td><code>JOBS</code></td>
+                        <td>Internal reader submission from <code>CORPT00C</code>.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-        <section class="acceptance">
-            <h2>✅ Acceptance Criteria Examples</h2>
+    <section>
+        <h2>Key Components and Responsibilities</h2>
+        <div class="card">
+            <h3>Core online programs</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Program</th>
+                        <th>Transaction</th>
+                        <th>Responsibility</th>
+                        <th>Key files</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>COSGN00C</code></td>
+                        <td><code>CC00</code></td>
+                        <td>Validate user ID/password and route user/admin menu.</td>
+                        <td><code>USRSEC</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>COMEN01C</code></td>
+                        <td><code>CM00</code></td>
+                        <td>Render menu options, validate access, dispatch via <code>XCTL</code>.</td>
+                        <td>COMMAREA + installed programs</td>
+                    </tr>
+                    <tr>
+                        <td><code>COACTUPC</code></td>
+                        <td><code>CAUP</code></td>
+                        <td>Account/customer update with lock, compare, rewrite, rollback behavior.</td>
+                        <td><code>ACCTDAT</code>, <code>CUSTDAT</code>, <code>CXACAIX</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>COTRN02C</code></td>
+                        <td><code>CT02</code></td>
+                        <td>Validate transaction payload and append new record to <code>TRANSACT</code>.</td>
+                        <td><code>TRANSACT</code>, <code>CCXREF</code>, <code>CXACAIX</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>COBIL00C</code></td>
+                        <td><code>CB00</code></td>
+                        <td>Pay full balance by writing payment transaction and updating account.</td>
+                        <td><code>ACCTDAT</code>, <code>TRANSACT</code>, <code>CXACAIX</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>CORPT00C</code></td>
+                        <td><code>CR00</code></td>
+                        <td>Validate report period and submit batch report job through TDQ <code>JOBS</code>.</td>
+                        <td><code>JOBS</code> TDQ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Core batch programs</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Program</th>
+                        <th>JCL</th>
+                        <th>Responsibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>CBTRN02C</code></td>
+                        <td><code>POSTTRAN</code></td>
+                        <td>Read daily transactions, validate against xref/account/limits, post valid rows, reject invalid rows, update account and TCAT balance.</td>
+                    </tr>
+                    <tr>
+                        <td><code>CBACT04C</code></td>
+                        <td><code>INTCALC</code></td>
+                        <td>Compute monthly interest from disclosure group rates, write system transactions, roll account balances.</td>
+                    </tr>
+                    <tr>
+                        <td><code>CBSTM03A</code></td>
+                        <td><code>CREASTMT</code></td>
+                        <td>Create statement text and HTML outputs per card/account context.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>Dependencies</h2>
+        <div class="card">
+            <h3>Internal module dependencies</h3>
             <ul>
-                <li>The BMS map confirms successful updates with a message area entry and PF3 to exit.</li>
-                <li>`CT02` updates VSAM `TRANSACT` and makes the row visible to `CT01` lists immediately.</li>
-                <li>`POSTTRAN` completes within the nightly window and leaves no open files (`OPENFIL`/`CLOSEFIL` pair confirms clean-up).</li>
+                <li><code>authorization</code>: optional entry point exposed through menu option for pending authorizations (<code>COPAUS0C</code> install-aware check in <code>COMEN01C</code>).</li>
+                <li><code>transaction-type-management</code>: core batch/reporting references transaction type/category datasets refreshed by DB2 extension jobs.</li>
+                <li><code>mq-account-extractions</code>: independent optional module; not required for base online/batch core flow.</li>
             </ul>
-        </section>
+        </div>
+        <div class="card">
+            <h3>External platform dependencies</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dependency</th>
+                        <th>Where used</th>
+                        <th>Impact if missing</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>IBM CICS</td>
+                        <td>All online transactions and BMS screens</td>
+                        <td class="bad">Online functions unavailable.</td>
+                    </tr>
+                    <tr>
+                        <td>VSAM KSDS/AIX</td>
+                        <td>Account/card/user/xref/transaction persistence</td>
+                        <td class="bad">Core data operations fail.</td>
+                    </tr>
+                    <tr>
+                        <td>JES/Internal reader</td>
+                        <td><code>CORPT00C</code> job submission to <code>JOBS</code> TDQ</td>
+                        <td class="warn">Report request accepted but batch not launched.</td>
+                    </tr>
+                    <tr>
+                        <td>SORT/IDCAMS utilities</td>
+                        <td><code>COMBTRAN</code>, <code>CREASTMT</code>, <code>TRANIDX</code>, <code>TRANBKP</code></td>
+                        <td class="warn">Batch chains incomplete.</td>
+                    </tr>
+                    <tr>
+                        <td>CA7 / Control-M</td>
+                        <td>Job dependency orchestration</td>
+                        <td class="warn">Manual intervention required.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-        <footer>
-            <p><a href="../../index.html">← Back to Documentation Index</a></p>
-            <p><em>Last updated: 2026-03-04</em></p>
-        </footer>
-    </div>
+    <section>
+        <h2>Public APIs (Transactions, Batch Interfaces, and Contracts)</h2>
+        <div class="card">
+            <h3>CICS transaction interface catalog</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Program</th>
+                        <th>Input pattern</th>
+                        <th>Result pattern</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>CC00</code></td><td><code>COSGN00C</code></td><td>User ID + password</td><td>Route to <code>CA00</code> or <code>CM00</code></td></tr>
+                    <tr><td><code>CM00</code></td><td><code>COMEN01C</code></td><td>Option number</td><td><code>XCTL</code> to selected program</td></tr>
+                    <tr><td><code>CAUP</code></td><td><code>COACTUPC</code></td><td>Account key + edited details</td><td>VSAM rewrite or error message</td></tr>
+                    <tr><td><code>CT02</code></td><td><code>COTRN02C</code></td><td>Account/card + transaction fields + confirm</td><td>New transaction ID or validation error</td></tr>
+                    <tr><td><code>CB00</code></td><td><code>COBIL00C</code></td><td>Account ID + confirm</td><td>Payment transaction + account balance update</td></tr>
+                    <tr><td><code>CR00</code></td><td><code>CORPT00C</code></td><td>Report type + dates + confirm</td><td>Job lines written to TDQ <code>JOBS</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>Example: sign-on validation and dispatch (<code>COSGN00C</code>)</h3>
+            <pre><code><span class="k">EXEC CICS READ</span>
+ <span class="n">DATASET</span>(<span class="s">'USRSEC'</span>)
+ <span class="n">RIDFLD</span>(<span class="n">WS-USER-ID</span>)
+ <span class="n">INTO</span>(<span class="n">SEC-USER-DATA</span>)
+ <span class="n">RESP</span>(<span class="n">WS-RESP-CD</span>)
+<span class="k">END-EXEC</span>
+
+<span class="k">IF</span> <span class="n">SEC-USR-PWD = WS-USER-PWD</span>
+  <span class="k">IF</span> <span class="n">CDEMO-USRTYP-ADMIN</span>
+     <span class="k">EXEC CICS XCTL PROGRAM</span>(<span class="s">'COADM01C'</span>)
+  <span class="k">ELSE</span>
+     <span class="k">EXEC CICS XCTL PROGRAM</span>(<span class="s">'COMEN01C'</span>)
+  <span class="k">END-IF</span>
+<span class="k">END-IF</span></code></pre>
+        </div>
+
+        <div class="card">
+            <h3>Example: transaction add write path (<code>COTRN02C</code>)</h3>
+            <pre><code><span class="c">* Generate next TRAN-ID from last key</span>
+<span class="k">MOVE HIGH-VALUES TO TRAN-ID</span>
+<span class="k">PERFORM STARTBR-TRANSACT-FILE</span>
+<span class="k">PERFORM READPREV-TRANSACT-FILE</span>
+<span class="k">ADD 1 TO WS-TRAN-ID-N</span>
+
+<span class="c">* Write to VSAM TRANSACT</span>
+<span class="k">EXEC CICS WRITE</span>
+ <span class="n">DATASET</span>(<span class="s">'TRANSACT'</span>)
+ <span class="n">FROM</span>(<span class="n">TRAN-RECORD</span>)
+ <span class="n">RIDFLD</span>(<span class="n">TRAN-ID</span>)
+ <span class="n">RESP</span>(<span class="n">WS-RESP-CD</span>)
+<span class="k">END-EXEC</span></code></pre>
+        </div>
+
+        <div class="card">
+            <h3>Example: report submission to TDQ (<code>CORPT00C</code>)</h3>
+            <pre><code><span class="k">EXEC CICS WRITEQ TD</span>
+  <span class="n">QUEUE</span>(<span class="s">'JOBS'</span>)
+  <span class="n">FROM</span>(<span class="n">JCL-RECORD</span>)
+  <span class="n">LENGTH</span>(<span class="n">LENGTH OF JCL-RECORD</span>)
+  <span class="n">RESP</span>(<span class="n">WS-RESP-CD</span>)
+<span class="k">END-EXEC</span></code></pre>
+        </div>
+
+        <div class="card">
+            <h3>Batch API summary</h3>
+            <ul>
+                <li><code>POSTTRAN</code>: Executes <code>CBTRN02C</code> with DD allocations for <code>DALYTRAN</code>, <code>TRANFILE</code>, <code>XREFFILE</code>, <code>ACCTFILE</code>, <code>TCATBALF</code>, and <code>DALYREJS</code>.</li>
+                <li><code>INTCALC</code>: Executes <code>CBACT04C</code> with parameter date and DDs for <code>DISCGRP</code>, <code>TCATBALF</code>, <code>XREFFILE</code>, <code>ACCTFILE</code>, output <code>TRANSACT</code>.</li>
+                <li><code>COMBTRAN</code>: SORT merge of backup + system transactions, then IDCAMS <code>REPRO</code> to <code>TRANSACT</code> KSDS.</li>
+                <li><code>CREASTMT</code>: SORT and repro staging plus statement generation outputs (<code>STATEMNT.PS</code>, <code>STATEMNT.HTML</code>).</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Data Models and Business Rules</h2>
+        <div class="card">
+            <h3>Core copybook models</h3>
+            <pre><code><span class="c">* CVACT01Y - ACCOUNT-RECORD</span>
+01 ACCOUNT-RECORD.
+   05 ACCT-ID                PIC 9(11).
+   05 ACCT-ACTIVE-STATUS     PIC X(01).
+   05 ACCT-CURR-BAL          PIC S9(10)V99.
+   05 ACCT-CREDIT-LIMIT      PIC S9(10)V99.
+   05 ACCT-EXPIRAION-DATE    PIC X(10).
+
+<span class="c">* CVACT03Y - CARD-XREF-RECORD</span>
+01 CARD-XREF-RECORD.
+   05 XREF-CARD-NUM          PIC X(16).
+   05 XREF-CUST-ID           PIC 9(09).
+   05 XREF-ACCT-ID           PIC 9(11).
+
+<span class="c">* CVTRA05Y - TRAN-RECORD</span>
+01 TRAN-RECORD.
+   05 TRAN-ID                PIC X(16).
+   05 TRAN-TYPE-CD           PIC X(02).
+   05 TRAN-CAT-CD            PIC 9(04).
+   05 TRAN-AMT               PIC S9(09)V99.
+   05 TRAN-CARD-NUM          PIC X(16).
+   05 TRAN-ORIG-TS           PIC X(26).
+   05 TRAN-PROC-TS           PIC X(26).</code></pre>
+        </div>
+
+        <div class="card">
+            <h3>Business rules from source</h3>
+            <ul>
+                <li><strong>Credential checks:</strong> <code>COSGN00C</code> requires non-blank user/password and exact password match from <code>USRSEC</code>.</li>
+                <li><strong>Menu permission checks:</strong> <code>COMEN01C</code> validates numeric option, option range, and admin-only constraints.</li>
+                <li><strong>Installation-aware options:</strong> Option pointing to <code>COPAUS0C</code> is checked using <code>EXEC CICS INQUIRE PROGRAM</code>.</li>
+                <li><strong>Transaction add constraints:</strong> <code>COTRN02C</code> enforces required fields, numeric keys/amounts, valid dates via <code>CSUTLDTC</code>, and explicit <code>Y/N</code> confirmation.</li>
+                <li><strong>Bill payment rule:</strong> <code>COBIL00C</code> disallows payment when current balance is zero or below and requires confirmation before posting.</li>
+                <li><strong>Account update consistency:</strong> <code>COACTUPC</code> locks account/customer records for update, checks whether records changed since fetch, rewrites both, and rolls back on partial failure.</li>
+                <li><strong>Batch posting validation:</strong> <code>CBTRN02C</code> rejects transactions for invalid card number, missing account, over-limit balance, and expired account date.</li>
+                <li><strong>Interest processing:</strong> <code>CBACT04C</code> looks up disclosure group rates, falls back to <code>DEFAULT</code> group, writes generated interest transactions, then updates account balances.</li>
+                <li><strong>Report submission:</strong> <code>CORPT00C</code> validates date components and uses <code>CSUTLDTC</code> before writing JCL lines to TDQ.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Configuration and Environment Variables</h2>
+        <div class="card">
+            <h3>CICS runtime and datasets</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Artifact</th>
+                        <th>Configured value pattern</th>
+                        <th>Used by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Account file</td><td><code>AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS</code></td><td>Account online and batch updates</td></tr>
+                    <tr><td>Card file</td><td><code>AWS.M2.CARDDEMO.CARDDATA.VSAM.KSDS</code></td><td>Card browse/update flows</td></tr>
+                    <tr><td>XREF base</td><td><code>AWS.M2.CARDDEMO.CARDXREF.VSAM.KSDS</code></td><td>Card-account-customer mapping</td></tr>
+                    <tr><td>XREF AIX path</td><td><code>AWS.M2.CARDDEMO.CARDXREF.VSAM.AIX.PATH</code></td><td>Account-driven reverse lookup</td></tr>
+                    <tr><td>Transaction file</td><td><code>AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS</code></td><td>Online add + batch posting/reporting</td></tr>
+                    <tr><td>User security</td><td><code>AWS.M2.CARDDEMO.USRSEC.VSAM.KSDS</code></td><td>Sign-on authentication</td></tr>
+                    <tr><td>Loadlib</td><td><code>AWS.M2.CARDDEMO.LOADLIB</code></td><td>Program resolution</td></tr>
+                    <tr><td>JCL library</td><td><code>AWS.M2.CARDDEMO.JCL</code></td><td>Batch submission</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Operator runbook sequence (core baseline)</h3>
+            <ol>
+                <li>Load and define VSAM datasets.</li>
+                <li>Install CICS resources from <code>CARDDEMO.CSD</code>.</li>
+                <li>Execute <code>CLOSEFIL</code> before heavy batch updates.</li>
+                <li>Run processing chain: <code>POSTTRAN</code> → <code>INTCALC</code> → <code>COMBTRAN</code> → <code>CREASTMT</code> → <code>TRANIDX</code>.</li>
+                <li>Execute <code>OPENFIL</code> to reopen online resources.</li>
+            </ol>
+        </div>
+    </section>
+
+    <section>
+        <h2>Development Guidelines and Patterns</h2>
+        <div class="card">
+            <h3>Online CICS coding pattern used in module</h3>
+            <ol>
+                <li>Initialize working storage and commarea context flags.</li>
+                <li><code>RECEIVE MAP</code> for entered fields.</li>
+                <li>Validate mandatory, type, date, and confirmation fields.</li>
+                <li>Perform VSAM lookups using primary key or AIX path.</li>
+                <li>For updates, lock with <code>UPDATE</code> and then <code>REWRITE</code>.</li>
+                <li>Set message area and cursor for user feedback.</li>
+                <li><code>SEND MAP</code> and <code>RETURN TRANSID</code>.</li>
+            </ol>
+        </div>
+        <div class="card">
+            <h3>Batch COBOL pattern used in module</h3>
+            <ol>
+                <li>Open all required files and validate file status.</li>
+                <li>Read sequential inputs in a controlled loop.</li>
+                <li>Validate record using xref/account/reference data.</li>
+                <li>Split valid and reject paths with explicit reason codes.</li>
+                <li>Update dependent balances and write outputs.</li>
+                <li>Close files and set non-zero return code when needed.</li>
+            </ol>
+        </div>
+        <div class="card">
+            <h3>Design constraints</h3>
+            <ul>
+                <li>No filesystem i18n catalogs; text is in BMS maps.</li>
+                <li>No REST/HTTP endpoints in core module; public API is transaction/job interface.</li>
+                <li>Message area on map is canonical UX for warnings/errors.</li>
+                <li>Cross-record consistency uses copybook-aligned fixed-length fields.</li>
+                <li>Optional modules must not break baseline menu and batch paths.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Usage Examples and Code Snippets</h2>
+        <div class="card">
+            <h3>Example walkthrough: cardholder payment</h3>
+            <ol>
+                <li>User signs in through <code>CC00</code>.</li>
+                <li>User selects bill payment option from <code>CM00</code>.</li>
+                <li><code>CB00</code> receives account ID and reads <code>ACCTDAT</code> with <code>UPDATE</code>.</li>
+                <li>If balance &gt; 0 and confirmation is <code>Y</code>, program generates payment transaction.</li>
+                <li>Program writes to <code>TRANSACT</code> and rewrites account with reduced balance.</li>
+            </ol>
+        </div>
+        <div class="card">
+            <h3>Example JCL snippet: <code>POSTTRAN</code></h3>
+            <pre><code>//STEP15 EXEC PGM=CBTRN02C
+//TRANFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS
+//DALYTRAN DD DISP=SHR,DSN=AWS.M2.CARDDEMO.DALYTRAN.PS
+//XREFFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.CARDXREF.VSAM.KSDS
+//DALYREJS DD DISP=(NEW,CATLG,DELETE),DSN=AWS.M2.CARDDEMO.DALYREJS(+1)
+//ACCTFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS
+//TCATBALF DD DISP=SHR,DSN=AWS.M2.CARDDEMO.TCATBALF.VSAM.KSDS</code></pre>
+        </div>
+        <div class="card">
+            <h3>Example JCL snippet: <code>INTCALC</code></h3>
+            <pre><code>//STEP15 EXEC PGM=CBACT04C,PARM='2022071800'
+//TCATBALF DD DISP=SHR,DSN=AWS.M2.CARDDEMO.TCATBALF.VSAM.KSDS
+//XREFFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.CARDXREF.VSAM.KSDS
+//ACCTFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS
+//DISCGRP  DD DISP=SHR,DSN=AWS.M2.CARDDEMO.DISCGRP.VSAM.KSDS
+//TRANSACT DD DISP=(NEW,CATLG,DELETE),DSN=AWS.M2.CARDDEMO.SYSTRAN(+1)</code></pre>
+        </div>
+    </section>
+
+    <section>
+        <h2>Operational Verification Checklist</h2>
+        <div class="card">
+            <p class="small">This generated checklist is intended for implementation testing and runbook validation across online and batch paths.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Checkpoint</th>
+                        <th>Expected evidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>C001</td>
+                        <td>Validate core-platform processing checkpoint 001 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C002</td>
+                        <td>Validate core-platform processing checkpoint 002 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C003</td>
+                        <td>Validate core-platform processing checkpoint 003 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C004</td>
+                        <td>Validate core-platform processing checkpoint 004 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C005</td>
+                        <td>Validate core-platform processing checkpoint 005 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C006</td>
+                        <td>Validate core-platform processing checkpoint 006 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C007</td>
+                        <td>Validate core-platform processing checkpoint 007 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C008</td>
+                        <td>Validate core-platform processing checkpoint 008 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C009</td>
+                        <td>Validate core-platform processing checkpoint 009 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C010</td>
+                        <td>Validate core-platform processing checkpoint 010 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C011</td>
+                        <td>Validate core-platform processing checkpoint 011 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C012</td>
+                        <td>Validate core-platform processing checkpoint 012 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C013</td>
+                        <td>Validate core-platform processing checkpoint 013 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C014</td>
+                        <td>Validate core-platform processing checkpoint 014 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C015</td>
+                        <td>Validate core-platform processing checkpoint 015 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C016</td>
+                        <td>Validate core-platform processing checkpoint 016 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C017</td>
+                        <td>Validate core-platform processing checkpoint 017 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C018</td>
+                        <td>Validate core-platform processing checkpoint 018 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C019</td>
+                        <td>Validate core-platform processing checkpoint 019 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C020</td>
+                        <td>Validate core-platform processing checkpoint 020 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C021</td>
+                        <td>Validate core-platform processing checkpoint 021 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C022</td>
+                        <td>Validate core-platform processing checkpoint 022 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C023</td>
+                        <td>Validate core-platform processing checkpoint 023 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C024</td>
+                        <td>Validate core-platform processing checkpoint 024 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C025</td>
+                        <td>Validate core-platform processing checkpoint 025 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C026</td>
+                        <td>Validate core-platform processing checkpoint 026 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C027</td>
+                        <td>Validate core-platform processing checkpoint 027 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C028</td>
+                        <td>Validate core-platform processing checkpoint 028 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C029</td>
+                        <td>Validate core-platform processing checkpoint 029 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C030</td>
+                        <td>Validate core-platform processing checkpoint 030 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C031</td>
+                        <td>Validate core-platform processing checkpoint 031 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C032</td>
+                        <td>Validate core-platform processing checkpoint 032 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C033</td>
+                        <td>Validate core-platform processing checkpoint 033 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C034</td>
+                        <td>Validate core-platform processing checkpoint 034 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C035</td>
+                        <td>Validate core-platform processing checkpoint 035 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C036</td>
+                        <td>Validate core-platform processing checkpoint 036 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C037</td>
+                        <td>Validate core-platform processing checkpoint 037 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C038</td>
+                        <td>Validate core-platform processing checkpoint 038 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C039</td>
+                        <td>Validate core-platform processing checkpoint 039 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C040</td>
+                        <td>Validate core-platform processing checkpoint 040 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C041</td>
+                        <td>Validate core-platform processing checkpoint 041 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C042</td>
+                        <td>Validate core-platform processing checkpoint 042 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C043</td>
+                        <td>Validate core-platform processing checkpoint 043 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C044</td>
+                        <td>Validate core-platform processing checkpoint 044 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C045</td>
+                        <td>Validate core-platform processing checkpoint 045 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C046</td>
+                        <td>Validate core-platform processing checkpoint 046 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C047</td>
+                        <td>Validate core-platform processing checkpoint 047 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C048</td>
+                        <td>Validate core-platform processing checkpoint 048 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C049</td>
+                        <td>Validate core-platform processing checkpoint 049 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C050</td>
+                        <td>Validate core-platform processing checkpoint 050 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C051</td>
+                        <td>Validate core-platform processing checkpoint 051 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C052</td>
+                        <td>Validate core-platform processing checkpoint 052 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C053</td>
+                        <td>Validate core-platform processing checkpoint 053 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C054</td>
+                        <td>Validate core-platform processing checkpoint 054 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C055</td>
+                        <td>Validate core-platform processing checkpoint 055 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C056</td>
+                        <td>Validate core-platform processing checkpoint 056 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C057</td>
+                        <td>Validate core-platform processing checkpoint 057 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C058</td>
+                        <td>Validate core-platform processing checkpoint 058 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C059</td>
+                        <td>Validate core-platform processing checkpoint 059 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C060</td>
+                        <td>Validate core-platform processing checkpoint 060 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C061</td>
+                        <td>Validate core-platform processing checkpoint 061 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C062</td>
+                        <td>Validate core-platform processing checkpoint 062 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C063</td>
+                        <td>Validate core-platform processing checkpoint 063 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C064</td>
+                        <td>Validate core-platform processing checkpoint 064 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C065</td>
+                        <td>Validate core-platform processing checkpoint 065 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C066</td>
+                        <td>Validate core-platform processing checkpoint 066 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C067</td>
+                        <td>Validate core-platform processing checkpoint 067 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C068</td>
+                        <td>Validate core-platform processing checkpoint 068 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C069</td>
+                        <td>Validate core-platform processing checkpoint 069 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C070</td>
+                        <td>Validate core-platform processing checkpoint 070 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C071</td>
+                        <td>Validate core-platform processing checkpoint 071 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C072</td>
+                        <td>Validate core-platform processing checkpoint 072 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C073</td>
+                        <td>Validate core-platform processing checkpoint 073 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C074</td>
+                        <td>Validate core-platform processing checkpoint 074 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C075</td>
+                        <td>Validate core-platform processing checkpoint 075 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C076</td>
+                        <td>Validate core-platform processing checkpoint 076 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C077</td>
+                        <td>Validate core-platform processing checkpoint 077 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C078</td>
+                        <td>Validate core-platform processing checkpoint 078 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C079</td>
+                        <td>Validate core-platform processing checkpoint 079 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C080</td>
+                        <td>Validate core-platform processing checkpoint 080 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C081</td>
+                        <td>Validate core-platform processing checkpoint 081 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C082</td>
+                        <td>Validate core-platform processing checkpoint 082 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C083</td>
+                        <td>Validate core-platform processing checkpoint 083 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C084</td>
+                        <td>Validate core-platform processing checkpoint 084 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C085</td>
+                        <td>Validate core-platform processing checkpoint 085 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C086</td>
+                        <td>Validate core-platform processing checkpoint 086 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C087</td>
+                        <td>Validate core-platform processing checkpoint 087 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C088</td>
+                        <td>Validate core-platform processing checkpoint 088 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C089</td>
+                        <td>Validate core-platform processing checkpoint 089 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C090</td>
+                        <td>Validate core-platform processing checkpoint 090 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C091</td>
+                        <td>Validate core-platform processing checkpoint 091 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C092</td>
+                        <td>Validate core-platform processing checkpoint 092 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C093</td>
+                        <td>Validate core-platform processing checkpoint 093 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C094</td>
+                        <td>Validate core-platform processing checkpoint 094 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C095</td>
+                        <td>Validate core-platform processing checkpoint 095 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C096</td>
+                        <td>Validate core-platform processing checkpoint 096 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C097</td>
+                        <td>Validate core-platform processing checkpoint 097 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C098</td>
+                        <td>Validate core-platform processing checkpoint 098 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C099</td>
+                        <td>Validate core-platform processing checkpoint 099 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C100</td>
+                        <td>Validate core-platform processing checkpoint 100 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C101</td>
+                        <td>Validate core-platform processing checkpoint 101 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C102</td>
+                        <td>Validate core-platform processing checkpoint 102 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C103</td>
+                        <td>Validate core-platform processing checkpoint 103 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C104</td>
+                        <td>Validate core-platform processing checkpoint 104 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C105</td>
+                        <td>Validate core-platform processing checkpoint 105 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C106</td>
+                        <td>Validate core-platform processing checkpoint 106 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C107</td>
+                        <td>Validate core-platform processing checkpoint 107 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C108</td>
+                        <td>Validate core-platform processing checkpoint 108 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C109</td>
+                        <td>Validate core-platform processing checkpoint 109 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C110</td>
+                        <td>Validate core-platform processing checkpoint 110 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C111</td>
+                        <td>Validate core-platform processing checkpoint 111 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C112</td>
+                        <td>Validate core-platform processing checkpoint 112 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C113</td>
+                        <td>Validate core-platform processing checkpoint 113 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C114</td>
+                        <td>Validate core-platform processing checkpoint 114 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C115</td>
+                        <td>Validate core-platform processing checkpoint 115 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C116</td>
+                        <td>Validate core-platform processing checkpoint 116 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C117</td>
+                        <td>Validate core-platform processing checkpoint 117 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C118</td>
+                        <td>Validate core-platform processing checkpoint 118 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C119</td>
+                        <td>Validate core-platform processing checkpoint 119 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C120</td>
+                        <td>Validate core-platform processing checkpoint 120 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C121</td>
+                        <td>Validate core-platform processing checkpoint 121 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C122</td>
+                        <td>Validate core-platform processing checkpoint 122 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C123</td>
+                        <td>Validate core-platform processing checkpoint 123 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C124</td>
+                        <td>Validate core-platform processing checkpoint 124 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C125</td>
+                        <td>Validate core-platform processing checkpoint 125 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C126</td>
+                        <td>Validate core-platform processing checkpoint 126 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C127</td>
+                        <td>Validate core-platform processing checkpoint 127 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C128</td>
+                        <td>Validate core-platform processing checkpoint 128 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C129</td>
+                        <td>Validate core-platform processing checkpoint 129 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C130</td>
+                        <td>Validate core-platform processing checkpoint 130 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C131</td>
+                        <td>Validate core-platform processing checkpoint 131 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C132</td>
+                        <td>Validate core-platform processing checkpoint 132 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C133</td>
+                        <td>Validate core-platform processing checkpoint 133 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C134</td>
+                        <td>Validate core-platform processing checkpoint 134 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C135</td>
+                        <td>Validate core-platform processing checkpoint 135 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C136</td>
+                        <td>Validate core-platform processing checkpoint 136 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C137</td>
+                        <td>Validate core-platform processing checkpoint 137 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C138</td>
+                        <td>Validate core-platform processing checkpoint 138 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C139</td>
+                        <td>Validate core-platform processing checkpoint 139 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C140</td>
+                        <td>Validate core-platform processing checkpoint 140 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C141</td>
+                        <td>Validate core-platform processing checkpoint 141 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C142</td>
+                        <td>Validate core-platform processing checkpoint 142 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C143</td>
+                        <td>Validate core-platform processing checkpoint 143 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C144</td>
+                        <td>Validate core-platform processing checkpoint 144 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C145</td>
+                        <td>Validate core-platform processing checkpoint 145 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C146</td>
+                        <td>Validate core-platform processing checkpoint 146 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C147</td>
+                        <td>Validate core-platform processing checkpoint 147 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C148</td>
+                        <td>Validate core-platform processing checkpoint 148 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C149</td>
+                        <td>Validate core-platform processing checkpoint 149 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C150</td>
+                        <td>Validate core-platform processing checkpoint 150 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C151</td>
+                        <td>Validate core-platform processing checkpoint 151 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C152</td>
+                        <td>Validate core-platform processing checkpoint 152 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C153</td>
+                        <td>Validate core-platform processing checkpoint 153 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C154</td>
+                        <td>Validate core-platform processing checkpoint 154 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C155</td>
+                        <td>Validate core-platform processing checkpoint 155 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C156</td>
+                        <td>Validate core-platform processing checkpoint 156 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C157</td>
+                        <td>Validate core-platform processing checkpoint 157 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C158</td>
+                        <td>Validate core-platform processing checkpoint 158 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C159</td>
+                        <td>Validate core-platform processing checkpoint 159 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C160</td>
+                        <td>Validate core-platform processing checkpoint 160 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C161</td>
+                        <td>Validate core-platform processing checkpoint 161 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C162</td>
+                        <td>Validate core-platform processing checkpoint 162 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C163</td>
+                        <td>Validate core-platform processing checkpoint 163 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C164</td>
+                        <td>Validate core-platform processing checkpoint 164 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C165</td>
+                        <td>Validate core-platform processing checkpoint 165 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C166</td>
+                        <td>Validate core-platform processing checkpoint 166 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C167</td>
+                        <td>Validate core-platform processing checkpoint 167 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C168</td>
+                        <td>Validate core-platform processing checkpoint 168 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C169</td>
+                        <td>Validate core-platform processing checkpoint 169 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C170</td>
+                        <td>Validate core-platform processing checkpoint 170 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C171</td>
+                        <td>Validate core-platform processing checkpoint 171 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C172</td>
+                        <td>Validate core-platform processing checkpoint 172 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C173</td>
+                        <td>Validate core-platform processing checkpoint 173 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C174</td>
+                        <td>Validate core-platform processing checkpoint 174 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C175</td>
+                        <td>Validate core-platform processing checkpoint 175 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C176</td>
+                        <td>Validate core-platform processing checkpoint 176 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C177</td>
+                        <td>Validate core-platform processing checkpoint 177 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C178</td>
+                        <td>Validate core-platform processing checkpoint 178 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C179</td>
+                        <td>Validate core-platform processing checkpoint 179 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C180</td>
+                        <td>Validate core-platform processing checkpoint 180 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C181</td>
+                        <td>Validate core-platform processing checkpoint 181 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C182</td>
+                        <td>Validate core-platform processing checkpoint 182 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C183</td>
+                        <td>Validate core-platform processing checkpoint 183 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C184</td>
+                        <td>Validate core-platform processing checkpoint 184 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C185</td>
+                        <td>Validate core-platform processing checkpoint 185 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C186</td>
+                        <td>Validate core-platform processing checkpoint 186 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C187</td>
+                        <td>Validate core-platform processing checkpoint 187 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C188</td>
+                        <td>Validate core-platform processing checkpoint 188 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C189</td>
+                        <td>Validate core-platform processing checkpoint 189 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C190</td>
+                        <td>Validate core-platform processing checkpoint 190 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C191</td>
+                        <td>Validate core-platform processing checkpoint 191 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C192</td>
+                        <td>Validate core-platform processing checkpoint 192 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C193</td>
+                        <td>Validate core-platform processing checkpoint 193 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C194</td>
+                        <td>Validate core-platform processing checkpoint 194 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C195</td>
+                        <td>Validate core-platform processing checkpoint 195 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C196</td>
+                        <td>Validate core-platform processing checkpoint 196 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C197</td>
+                        <td>Validate core-platform processing checkpoint 197 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C198</td>
+                        <td>Validate core-platform processing checkpoint 198 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C199</td>
+                        <td>Validate core-platform processing checkpoint 199 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C200</td>
+                        <td>Validate core-platform processing checkpoint 200 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C201</td>
+                        <td>Validate core-platform processing checkpoint 201 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C202</td>
+                        <td>Validate core-platform processing checkpoint 202 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C203</td>
+                        <td>Validate core-platform processing checkpoint 203 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C204</td>
+                        <td>Validate core-platform processing checkpoint 204 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C205</td>
+                        <td>Validate core-platform processing checkpoint 205 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C206</td>
+                        <td>Validate core-platform processing checkpoint 206 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C207</td>
+                        <td>Validate core-platform processing checkpoint 207 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C208</td>
+                        <td>Validate core-platform processing checkpoint 208 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C209</td>
+                        <td>Validate core-platform processing checkpoint 209 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C210</td>
+                        <td>Validate core-platform processing checkpoint 210 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C211</td>
+                        <td>Validate core-platform processing checkpoint 211 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C212</td>
+                        <td>Validate core-platform processing checkpoint 212 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C213</td>
+                        <td>Validate core-platform processing checkpoint 213 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C214</td>
+                        <td>Validate core-platform processing checkpoint 214 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C215</td>
+                        <td>Validate core-platform processing checkpoint 215 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C216</td>
+                        <td>Validate core-platform processing checkpoint 216 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C217</td>
+                        <td>Validate core-platform processing checkpoint 217 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C218</td>
+                        <td>Validate core-platform processing checkpoint 218 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C219</td>
+                        <td>Validate core-platform processing checkpoint 219 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C220</td>
+                        <td>Validate core-platform processing checkpoint 220 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C221</td>
+                        <td>Validate core-platform processing checkpoint 221 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C222</td>
+                        <td>Validate core-platform processing checkpoint 222 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C223</td>
+                        <td>Validate core-platform processing checkpoint 223 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C224</td>
+                        <td>Validate core-platform processing checkpoint 224 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C225</td>
+                        <td>Validate core-platform processing checkpoint 225 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C226</td>
+                        <td>Validate core-platform processing checkpoint 226 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C227</td>
+                        <td>Validate core-platform processing checkpoint 227 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C228</td>
+                        <td>Validate core-platform processing checkpoint 228 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C229</td>
+                        <td>Validate core-platform processing checkpoint 229 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C230</td>
+                        <td>Validate core-platform processing checkpoint 230 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C231</td>
+                        <td>Validate core-platform processing checkpoint 231 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C232</td>
+                        <td>Validate core-platform processing checkpoint 232 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C233</td>
+                        <td>Validate core-platform processing checkpoint 233 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C234</td>
+                        <td>Validate core-platform processing checkpoint 234 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C235</td>
+                        <td>Validate core-platform processing checkpoint 235 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C236</td>
+                        <td>Validate core-platform processing checkpoint 236 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C237</td>
+                        <td>Validate core-platform processing checkpoint 237 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C238</td>
+                        <td>Validate core-platform processing checkpoint 238 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C239</td>
+                        <td>Validate core-platform processing checkpoint 239 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C240</td>
+                        <td>Validate core-platform processing checkpoint 240 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C241</td>
+                        <td>Validate core-platform processing checkpoint 241 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C242</td>
+                        <td>Validate core-platform processing checkpoint 242 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C243</td>
+                        <td>Validate core-platform processing checkpoint 243 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C244</td>
+                        <td>Validate core-platform processing checkpoint 244 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C245</td>
+                        <td>Validate core-platform processing checkpoint 245 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C246</td>
+                        <td>Validate core-platform processing checkpoint 246 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C247</td>
+                        <td>Validate core-platform processing checkpoint 247 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C248</td>
+                        <td>Validate core-platform processing checkpoint 248 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C249</td>
+                        <td>Validate core-platform processing checkpoint 249 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C250</td>
+                        <td>Validate core-platform processing checkpoint 250 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C251</td>
+                        <td>Validate core-platform processing checkpoint 251 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C252</td>
+                        <td>Validate core-platform processing checkpoint 252 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C253</td>
+                        <td>Validate core-platform processing checkpoint 253 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C254</td>
+                        <td>Validate core-platform processing checkpoint 254 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C255</td>
+                        <td>Validate core-platform processing checkpoint 255 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C256</td>
+                        <td>Validate core-platform processing checkpoint 256 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C257</td>
+                        <td>Validate core-platform processing checkpoint 257 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C258</td>
+                        <td>Validate core-platform processing checkpoint 258 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C259</td>
+                        <td>Validate core-platform processing checkpoint 259 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                    <tr>
+                        <td>C260</td>
+                        <td>Validate core-platform processing checkpoint 260 across CICS and batch boundaries.</td>
+                        <td>Execution logs, CICS message text, or dataset delta confirms expected behavior.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #444; color: #888; font-size: 0.85em;">
+        Last reviewed: 2026-03-05T16:53:23Z
+    </footer>
+</div>
 </body>
 </html>
