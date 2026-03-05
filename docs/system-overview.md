@@ -40,9 +40,43 @@
 
 ### 1. Core Platform
 **ID:** `core-platform`  
-**Purpose:** Serve the base CardDemo experience: authentication, account/card CRUD, transaction posting, billing, and batch orchestration over VSAM data.  
-**Key Components:** BMS mapsets (`COSGN00`, `COMEN01`, `COACTVW`, `COTRN02`, `COBIL00`), COBOL programs (`COSGN00C`, `COACTVWC`, `COTRN02C`, `CBIL00C`, `COPAUS0C` when pending authorizations are enabled), JCL batch jobs (`POSTTRAN`, `CREASTMT`, `TRANBKP`, `OPENFIL`, `CLOSEFIL`), scheduler definitions (`app/scheduler/*.ca7`), shared copybooks (`app/cpy/*.cpy`).  
-**Public APIs:** CICS transactions `CC00` (sign-on), `CM00` (main menu), `CAUP/CCUP` (account/card updates), `CT00/CT01/CT02` (transaction list/view/add), `CB00` (bill payment), `CR00` (reports). Batch interfaces include `POSTTRAN`, `CREASTMT`, `TRANEXTR`, `INTCALC`, `TRANBKP`, `TRANIDX`.  
+**Purpose:** Provide the mandatory CardDemo runtime baseline over CICS + VSAM: authenticate users, route menu context, maintain account/card/customer data, post online transactions, execute bill payments, and run nightly/monthly batch pipelines that keep balances, transaction files, and statements consistent.  
+**Business Context:** This module is the operational backbone for all user stories. Optional modules (authorization, transaction-type-management, MQ extraction) depend on its commarea contracts, VSAM entities, scheduler cadence, and menu/navigation behavior.  
+**Key Components:**  
+- **Online programs + maps:** `COSGN00C/COSGN00` (sign-on), `COMEN01C/COMEN01` (menu), `COACTVWC/COACTVW` (account view), `COACTUPC/COACTUP` (account update), `COCRDUPC/COCRDUP` (card update), `COTRN02C/COTRN02` (transaction add), `COBIL00C/COBIL00` (bill payment), plus list/view/report flows (`COTRN00C`, `COTRN01C`, `CORPT00C`).  
+- **Batch programs:** `CBTRN02C` (daily posting), `CBACT04C` (interest and fee computation), `CBSTM03A` (statement generation in text + HTML).  
+- **Batch orchestration JCL:** `POSTTRAN`, `INTCALC`, `COMBTRAN`, `CREASTMT`, `TRANBKP`, `TRANIDX`, `OPENFIL`, `CLOSEFIL`, `WAITSTEP`, `TRANREPT`.  
+- **Runtime resources:** CICS definitions in `app/csd/CARDDEMO.CSD` for files/programs/transactions; scheduler dependencies in `app/scheduler/CardDemo.ca7` and `app/scheduler/CardDemo.controlm`.  
+- **Shared contracts:** copybooks in `app/cpy` such as `COCOM01Y` (commarea), `CVACT01Y` (account), `CVACT03Y` (xref), `CVTRA05Y`/`CVTRA06Y` (transaction records), `CSUSR01Y` (user security).  
+**Public APIs:**  
+- **CICS transactions:** `CC00`, `CM00`, `CAVW`, `CAUP`, `CCLI`, `CCDL`, `CCUP`, `CT00`, `CT01`, `CT02`, `CB00`, `CR00`, `CA00`, `CU00`, `CU01`, `CU02`, `CU03`.  
+- **Batch interfaces:** `POSTTRAN`, `INTCALC`, `COMBTRAN`, `CREASTMT`, `TRANBKP`, `TRANIDX`, `TRANREPT`, `OPENFIL`, `CLOSEFIL`.  
+- **Operational commands:** SDSF-driven CICS file operations in `OPENFIL/CLOSEFIL` JCL (`CEMT SET FIL(... ) OPE/CLO`).  
+- **Interface example:** `CT02` writes new `TRANSACT` records after key/data validation and explicit `Y/N` confirmation; `CB00` writes a payment transaction then rewrites account balance.  
+**Dependencies:**  
+- **Internal modules:** base dependency for `authorization`, `transaction-type-management`, and `mq-account-extractions`; optional features are surfaced through menu routing and shared datasets/contracts.  
+- **External platform:** CICS, JES/JCL execution, VSAM KSDS/AIX datasets, RACF provisioning, scheduler (CA7/Control-M).  
+- **Primary VSAM datasets:** `ACCTDAT`, `CARDDAT`, `CCXREF`, `CXACAIX`, `TRANSACT`, `USRSEC`, `TCATBALF` plus daily/system transaction generations used by batch jobs.  
+**Data Models and Structures:**  
+- **`ACCOUNT-RECORD` (`CVACT01Y`)**: account id, active status, current balance, credit/cash limits, cycle credit/debit, open/expiry/reissue dates, account group.  
+- **`CARD-XREF-RECORD` (`CVACT03Y`)**: card number -> customer id + account id mapping, including AIX lookup path by account id.  
+- **`TRAN-RECORD` (`CVTRA05Y`)**: transaction id, type/category, source/description, amount, merchant metadata, card number, orig/proc timestamps.  
+- **`DALYTRAN-RECORD` (`CVTRA06Y`)**: daily batch input mirror of transaction payload.  
+- **`CARDDEMO-COMMAREA` (`COCOM01Y`)**: from/to transaction-program routing, user identity/type, and account/card/customer context propagation.  
+**Module-Specific Business Rules:**  
+- **Authentication and routing:** `CC00` rejects blank credentials, validates password from `USRSEC`, and routes admin users to `COADM01C` and cardholders to `COMEN01C`.  
+- **Menu authorization:** `CM00` blocks admin-only options for non-admin users and checks option program availability with `EXEC CICS INQUIRE PROGRAM` before transfer.  
+- **Account/card consistency:** account-driven operations resolve cross-reference (`CXACAIX`/`CCXREF`) before reading account/customer/card masters; missing links are surfaced as explicit map errors.  
+- **Controlled updates:** `CAUP` and `CCUP` require PF5 confirmation to persist; both perform lock-for-update reads and stale-data checks before `REWRITE`, avoiding blind overwrites.  
+- **Validation depth:**  
+  - `CAUP`: validates dates, signed amount fields, SSN composition, FICO range, US state code, state/ZIP compatibility, and required name/address/contact fields.  
+  - `CCUP`: card status must be `Y/N`; expiry month must be `1-12`; expiry year constrained to `1950-2099`; embossed name must be alphabetic/spaces.  
+  - `CT02`: requires account or card key; validates amount mask (`+/-99999999.99`), date format and validity (`YYYY-MM-DD` via `CSUTLDTC`), numeric merchant id, and non-empty required attributes.  
+- **Bill payment semantics:** `CB00` blocks payment when current balance is not positive, requires confirm flag, writes a payment transaction (`TRAN-TYPE-CD='02'`, category `2`), and rewrites account balance in the same flow.  
+- **Batch posting and interest:**  
+  - `POSTTRAN` validates incoming daily transactions against xref/account, rejects over-limit/expired-account records into `DALYREJS`, updates `TRANSACT`, `ACCTDATA`, and `TCATBALF` on success.  
+  - `INTCALC` computes monthly interest from disclosure rates (`DISCGRP`) and transaction category balances (`TCATBALF`), updates accounts, and emits system transactions used by `COMBTRAN`.  
+  - `CREASTMT` generates both plain-text and HTML statements from transaction/account/customer/xref data.  
 **User Story Examples:**  
 - As a cardholder, I want to update my mailing address via `CAUP` so that statements route to my new location.  
 - As a payments analyst, I want nightly `POSTTRAN` and `INTCALC` to finish before 4:00 AM so downstream reporting jobs can start.  
