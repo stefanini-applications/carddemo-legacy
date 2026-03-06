@@ -84,9 +84,35 @@
 
 ### 2. Authorization
 **ID:** `authorization`  
-**Purpose:** Add an MQ-driven credit card authorization service that stores pending requests in IMS and tracks fraud in DB2.  
-**Key Components:** COBOL programs (`COPAUA0C`, `COPAUS0C`, `COPAUS1C`, `COPAUS2C`, `CBPAUP0C`), MQ queues (`AWS.M2.CARDDEMO.PAUTH.REQUEST`, `AWS.M2.CARDDEMO.PAUTH.REPLY`), IMS DBDs/PSBs (`DBPAUTP0`, `DBPAUTX0`, `PSBPAUTB`, `PSBPAUTL`), DB2 table/index (`AUTHFRDS`, `XAUTHFRD`), BMS screens (`COPAU00`, `COPAU01`).  
-**Public APIs:** CICS transactions `CP00` (MQ trigger processing), `CPVS` (summary), `CPVD` (details and fraud marking). MQ interface for request/response, DB2 writes to `AUTHFRDS`, batch job `CBPAUP0J` purges expired IMS records.  
+**Purpose:** Implement a pending-authorization processing pipeline where MQ requests are evaluated in CICS, authorization state is persisted in IMS HIDAM (`PAUTSUM0`/`PAUTDTL1`), and analyst fraud decisions are persisted in DB2 for audit/analytics.  
+**Business Context:** This module models issuer-side decisioning and review workflows. It provides asynchronous partner integration (`CP00`), operational analyst tooling (`CPVS`/`CPVD`), and housekeeping (`CBPAUP0J`) so pending authorization data remains queryable and bounded.  
+**Key Components:**  
+- **Online processor (`COPAUA0C`, `CP00`)**: MQGET request parsing (CSV), VSAM xref/account/customer lookups, decline/approval decisioning (`00`/`05`), response creation, and IMS summary/detail writes.  
+- **Summary UI (`COPAUS0C`, `CPVS`)**: account search, account/customer panel rendering, IMS summary + paged detail traversal, row selection transfer to `CPVD`.  
+- **Detail/Fraud UI (`COPAUS1C`, `CPVD`)**: reason-code text mapping, next-record navigation, PF5 fraud toggle, syncpoint/rollback coordination.  
+- **Fraud DB2 handler (`COPAUS2C`)**: inserts into `CARDDEMO.AUTHFRDS`; on duplicate key (`SQLCODE -803`) executes update of `AUTH_FRAUD` and `FRAUD_RPT_DATE`.  
+- **Batch purge (`CBPAUP0C` via `CBPAUP0J`)**: deletes expired `PAUTDTL1` records, adjusts summary counters/amounts, deletes empty `PAUTSUM0`, checkpoints with configurable frequency.  
+- **Definitions and contracts**: BMS mapsets (`COPAU00`, `COPAU01`), IMS DBD/PSB (`DBPAUTP0`, `DBPAUTX0`, `PSBPAUTB`, `PSBPAUTL`), DB2 DDL/DCL (`AUTHFRDS`, `XAUTHFRD`, `AUTHFRDS.dcl`), and CICS resources (`CRDDEMO2.csd`).  
+**Public APIs:**  
+- **CICS transactions:** `CP00` (MQ trigger authorization engine), `CPVS` (authorization summary), `CPVD` (authorization detail + fraud action).  
+- **MQ contracts:** request CSV (`AUTH-DATE ... TRANSACTION-ID`) and response CSV (`CARD-NUM,TRANSACTION-ID,AUTH-ID-CODE,AUTH-RESP-CODE,AUTH-RESP-REASON,APPROVED-AMT`).  
+- **Batch interface:** `CBPAUP0J` (`PGM=DFSRRC00`, `PARM='BMP,CBPAUP0C,PSBPAUTB'`) with `SYSIN` parameter string (`EXPIRY_DAYS,CHKP_FREQ,CHKP_DIS_FREQ,DEBUG_FLAG`).  
+- **DB2 write interface:** `CARDDEMO.AUTHFRDS` insert/update invoked by `COPAUS2C` during `CPVD` PF5 fraud actions.  
+**Dependencies:**  
+- **Internal modules:** core-platform VSAM datasets and copybooks (`CCXREF`, `ACCTDAT`, `CUSTDAT`, `COCOM01Y`, `CVACT01Y`, `CVACT03Y`, `CVCUS01Y`).  
+- **External platform:** CICS (transactions/program/mapset resources), IBM MQ (request/reply queues and trigger data), IMS DB (HIDAM database + PSB scheduling), DB2 (table/index + DB2TRAN plan mapping), JES/JCL for purge jobs.  
+**Data Models and Structures:**  
+- **MQ request (`CCPAURQY`)**: request fields include card, amount, merchant metadata, and transaction id.  
+- **MQ response (`CCPAURLY`)**: response fields include auth id/code/reason and approved amount.  
+- **IMS summary (`CIPAUSMY` / `PAUTSUM0`)**: account/customer-level counters, balances, and approved/declined amount aggregates.  
+- **IMS detail (`CIPAUDTY` / `PAUTDTL1`)**: authorization key (9’s complement date/time), request/response attributes, match status (`P/D/E/M`), fraud status (`F/R`) and fraud date.  
+- **DB2 fraud table (`AUTHFRDS`)**: keyed by `(CARD_NUM, AUTH_TS)`, stores auth request/response metadata plus fraud action and account/customer linkage.  
+**Module-Specific Business Rules:**  
+- `CP00` declines with reason `3100` when card/account/customer context is not found; declines with `4100` when transaction amount exceeds available amount.  
+- `CP00` sends response with preserved MQ correlation id and then updates IMS summary/detail in the same processing cycle.  
+- `CPVS` supports PF7/PF8 paging over IMS detail records and only accepts `S/s` as valid row selection command for detail transfer.  
+- `CPVD` PF5 toggles fraud status between confirmed (`F`) and removed (`R`); DB2 success is required before IMS detail rewrite/commit.  
+- `CBPAUP0C` computes expiry using `CURRENT-YYDDD` and the inverted IMS date key; expired detail records are deleted and summary aggregates are decremented accordingly.  
 **User Story Examples:**  
 - As a partner system, I want to submit a CSV-style authorization request via `AWS.M2.CARDDEMO.PAUTH.REQUEST` and receive a decision in under two seconds.  
 - As a fraud analyst, I want `CPVD` to flag suspicious responses, persist `AUTH_FRAUD='Y'` in `AUTHFRDS`, and surface the reason code to the terminal.  
@@ -202,9 +228,10 @@ CREATE TABLE <schema>.AUTHFRDS (
 - Bill payments (`CB00`) validate available balance before posting and prompt PF keys for confirmation.  
 - Cross-reference lookups (`CARDXREF`) ensure card/account pair consistency during updates.
 ### Authorization
-- Every MQ request must persist to IMS and DB2 before replying; the MQ response echoes the same `TRANSACTION-ID`.  
-- Fraud marking (`CPVD` PF5) records `AUTH_FRAUD='Y'` in `AUTHFRDS` and annotates the IMS detail segment.  
-- `CBPAUP0J` removes IMS authorizations older than 30 days and updates available credit for the associated account/card.
+- `CP00` parses CSV MQ requests, decides approval/decline, and returns a correlated response (`TRANSACTION-ID` echoed) before writing pending authorization records into IMS.  
+- Decisioning uses VSAM + IMS balances; missing card/account/customer paths map to reason `3100`, and over-limit requests map to `4100`.  
+- `CPVD` PF5 toggles fraud status (`F`/`R`) and invokes DB2 insert/update on `AUTHFRDS`; IMS detail is rewritten only when DB2 update succeeds.  
+- `CBPAUP0J`/`CBPAUP0C` remove expired detail records using configurable expiry days, decrement summary counters/amounts, and delete empty summary roots with periodic checkpoints.
 ### Transaction Type Management
 - DB2 delete operations are blocked when `TRANSACTION_TYPE_CATEGORY` references a type (`DELETE RESTRICT`).  
 - Batch `TRANEXTR` exports DB2 rows into VSAM-friendly files every run so online transactions keep their local reference data.  
