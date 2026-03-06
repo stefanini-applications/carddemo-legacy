@@ -75,44 +75,109 @@
 
 ### 2. Accounts
 **ID:** `accounts`  
-**Purpose:** Enables cardholders and administrators to view and update credit card account information including balances, credit limits, and account status.  
+**Purpose:** Enables cardholders, customer service representatives, and administrators to view and update credit card account information including balances, credit limits, account status, and customer demographics. Also provides four batch COBOL programs for account file read/update utilities and nightly interest calculation.
+
+**Business Context:** The account record is the central entity of CardDemo. Every other module (transactions, bill-payment, credit-cards, authorization, MQ integration) reads or updates ACCTDATA VSAM. The account's `ACCT-GROUP-ID` drives interest rate lookup in DISCGRP, and `ACCT-ACTIVE-STATUS` controls whether transactions and authorizations are permitted.
+
 **Key Components:**
-- `COACTVWC` – Account View CICS program (CAVW transaction)
-- `COACTUPC` – Account Update CICS program (CAUP transaction)
-- `CBACT01C` – Batch: Read account records sequentially
-- `CBACT02C` – Batch: Read account by account ID
-- `CBACT03C` – Batch: Update account records
-- `CBACT04C` – Batch: Interest calculation (uses TCATBALF discount groups)
-- `CVACT01Y.cpy` – Account record layout (300-byte, RECLN=300)
-- `COACTVW.bms` / `COACTUP.bms` – BMS screen maps
+- `COACTVWC` – Account View CICS program (CAVW transaction) — reads CARDXREF AIX → ACCTDATA → CUSTDATA; read-only display (941 lines)
+- `COACTUPC` – Account Update CICS program (CAUP transaction) — full field-level validation, stale-data detection, read-for-update locking; updates both ACCTDATA and CUSTDATA in one PF5 operation (4236 lines)
+- `CBACT01C` – Batch: Sequential account file read → OUTFILE (flat), ARRYFILE (balance arrays), VBRCFILE
+- `CBACT02C` – Batch: Random/keyed account read by ACCT-ID
+- `CBACT03C` – Batch: Account record update (reads input, rewrites VSAM)
+- `CBACT04C` – Batch: Interest calculation — reads TCATBALF (transaction category balances) sequentially, looks up rates from DISCGRP by ACCT-GROUP-ID, writes interest transactions to TRANSACT GDG output, updates ACCTFILE
+- `CVACT01Y.cpy` – Account record layout (300-byte, RECLN=300, key offset 0 length 11)
+- `COACTVW.bms` / `COACTUP.bms` – BMS screen maps (24×80, mapset COACTVW/COACTUP, map CACTVWA/CACTUPA)
+- `COACTVW.CPY` / `COACTUP.CPY` – Generated BMS symbolic map copybooks
+- ACCTDATA VSAM (`AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS`) — defined by ACCTFILE.jcl
+- DISCGRP VSAM (`AWS.M2.CARDDEMO.DISCGRP.VSAM.KSDS`) — interest rate reference file
+- TCATBALF VSAM (`AWS.M2.CARDDEMO.TCATBALF.VSAM.KSDS`) — transaction category balance input for CBACT04C
 
 **CICS Transactions:**
-| Transaction | Program   | Function |
-|:-----------|:---------|:---------|
-| CAVW       | COACTVWC | View account details |
-| CAUP       | COACTUPC | Update account information |
+| Transaction | Program   | BMS Mapset/Map    | Function |
+|:-----------|:---------|:-----------------|:---------|
+| CAVW       | COACTVWC | COACTVW / CACTVWA | View account details — reads CARDXREF AIX, ACCTDATA, CUSTDATA |
+| CAUP       | COACTUPC | COACTUP / CACTUPA | Update account and customer data — validate, lock, rewrite both VSAM files |
 
-**Account Data Model (`CVACT01Y`):**
+**PF Key Navigation (CAUP — COACTUPC):**
+| PF Key | Action |
+|:------|:------|
+| PF3   | Exit to calling program or Main Menu (CM00) |
+| PF5   | Confirm update (9600-WRITE-PROCESSING: READ UPDATE → validate → REWRITE) |
+| PF12  | Reload account from VSAM (discard screen edits) |
+| Enter | Navigate to account (enter mode) / re-display (re-enter mode) |
+
+**Account Data Model (`CVACT01Y` — VSAM KSDS, 300 bytes, key: ACCT-ID):**
 ```cobol
 01  ACCOUNT-RECORD.
-    05  ACCT-ID                  PIC 9(11).        -- Account identifier
-    05  ACCT-ACTIVE-STATUS       PIC X(01).        -- Account status (A/I)
+    05  ACCT-ID                  PIC 9(11).        -- Account identifier (primary key)
+    05  ACCT-ACTIVE-STATUS       PIC X(01).        -- 'A'=Active, 'I'=Inactive
     05  ACCT-CURR-BAL            PIC S9(10)V99.    -- Current balance
     05  ACCT-CREDIT-LIMIT        PIC S9(10)V99.    -- Credit limit
-    05  ACCT-CASH-CREDIT-LIMIT   PIC S9(10)V99.    -- Cash credit limit
+    05  ACCT-CASH-CREDIT-LIMIT   PIC S9(10)V99.    -- Cash advance limit
     05  ACCT-OPEN-DATE           PIC X(10).        -- Open date YYYY-MM-DD
-    05  ACCT-EXPIRAION-DATE      PIC X(10).        -- Expiration date
+    05  ACCT-EXPIRAION-DATE      PIC X(10).        -- Expiration date (typo in source)
     05  ACCT-REISSUE-DATE        PIC X(10).        -- Reissue date
     05  ACCT-CURR-CYC-CREDIT     PIC S9(10)V99.    -- Current cycle credits
     05  ACCT-CURR-CYC-DEBIT      PIC S9(10)V99.    -- Current cycle debits
-    05  ACCT-ADDR-ZIP            PIC X(10).        -- ZIP code
-    05  ACCT-GROUP-ID            PIC X(10).        -- Discount group ID
+    05  ACCT-ADDR-ZIP            PIC X(10).        -- Billing ZIP code
+    05  ACCT-GROUP-ID            PIC X(10).        -- Discount/interest rate group key
+    05  FILLER                   PIC X(178).       -- Reserved for future fields
 ```
+
+**VSAM Files Accessed:**
+| DD Name   | Dataset                                        | Access Mode          | Programs              |
+|:---------|:----------------------------------------------|:--------------------|:---------------------|
+| ACCTDAT  | AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS             | READ / READ UPDATE / REWRITE | COACTVWC, COACTUPC, CBACT01C–04C |
+| CUSTDAT  | AWS.M2.CARDDEMO.CUSTDATA.VSAM.KSDS             | READ / READ UPDATE / REWRITE | COACTVWC, COACTUPC |
+| CXACAIX  | AWS.M2.CARDDEMO.CARDXREF.VSAM.AIX.PATH         | READ (by ACCT-ID)   | COACTVWC, COACTUPC |
+| TCATBALF | AWS.M2.CARDDEMO.TCATBALF.VSAM.KSDS             | READ SEQUENTIAL     | CBACT04C |
+| DISCGRP  | AWS.M2.CARDDEMO.DISCGRP.VSAM.KSDS              | READ RANDOM         | CBACT04C |
+
+**Batch Job — INTCALC (CBACT04C):**
+```jcl
+//INTCALC JOB 'INTEREST CALCULATOR'
+//STEP15 EXEC PGM=CBACT04C,PARM='YYYYMMDD'
+//TCATBALF DD DISP=SHR,DSN=AWS.M2.CARDDEMO.TCATBALF.VSAM.KSDS
+//ACCTFILE DD DISP=SHR,DSN=AWS.M2.CARDDEMO.ACCTDATA.VSAM.KSDS
+//DISCGRP  DD DISP=SHR,DSN=AWS.M2.CARDDEMO.DISCGRP.VSAM.KSDS
+//TRANSACT DD DISP=(NEW,CATLG,DELETE),DSN=AWS.M2.CARDDEMO.SYSTRAN(+1)
+```
+
+**Internal Dependencies:**
+- **authentication** (prerequisite) — user must be signed in; COMMAREA carries session context
+- **credit-cards** (downstream) — COACTUPC XCTLs to COCRDLIC (CCLI) and COCRDUPC (CCUP); CARDXREF AIX used by both online programs
+- **transactions** (downstream) — TRANSACT VSAM references ACCT-ID; CBACT04C writes interest transactions
+- **bill-payment** (downstream) — COBIL00C updates ACCT-CURR-BAL and ACCT-CURR-CYC-CREDIT in ACCTDATA
+- **batch-processing** (downstream) — CBACT01C–04C participate in the EOD JCL pipeline; INTCALC runs after POSTTRAN
+- **authorization** (consumer) — COPAUA0C reads ACCTDATA to check available credit; CBPAUP0C updates ACCTDATA after authorization purge
+- **mq-integration** (consumer) — COACCT01 (CDRA) reads ACCTDATA via MQ request/response
+
+**Field Validation in COACTUPC:**
+| Field                  | Routine                  | Rule |
+|:----------------------|:------------------------|:----|
+| ACCT-ACTIVE-STATUS     | 1210-EDIT-ACCOUNT        | 'Y'/'N' on screen → 'A'/'I' in VSAM |
+| Monetary fields (×5)   | 1250-EDIT-SIGNED-9V2     | Signed S9(10)V99; blank = no change |
+| SSN                    | 1265-EDIT-US-SSN         | 9 digits; area 000/666/900–999 invalid |
+| Phone numbers (×2)     | 1260-EDIT-US-PHONE       | (NXX) NXX-XXXX; area code via CSLKPCDY table |
+| State code             | 1270-EDIT-US-STATE-CD    | 2-char US abbreviation |
+| ZIP / State            | 1280-EDIT-US-STATE-ZIP-CD | ZIP must be consistent with state |
+
+**Business Rules:**
+- Account ID is 11-digit numeric; must exist in ACCTDATA VSAM
+- Active status 'I' prevents new transactions (enforced in COTRN02C and COPAUA0C)
+- COACTUPC locks both ACCTDATA and CUSTDATA records (READ UPDATE) before rewrite to prevent concurrent conflicts
+- Stale-data detection: if record was changed since screen load, PF5 is rejected with "Record changed by some one else. Please review"
+- Interest calculation: `monthly_interest = balance × rate / 1200`; rate from DISCGRP keyed by ACCT-GROUP-ID + TRAN-TYPE-CD + TRAN-CAT-CD
+- 178-byte FILLER in CVACT01Y is reserved for new fields without breaking existing record layouts
 
 **User Story Examples:**
 - As a **cardholder**, I want to view my current account balance and credit limit so I understand my available credit.
 - As a **cardholder**, I want to update my billing address ZIP code so my account reflects current information.
-- As a **batch operator**, I want interest calculated on outstanding balances nightly so accounts are updated accurately.
+- As a **customer service representative**, I want to update a cardholder's credit limit so the account reflects an approved credit line change.
+- As a **risk officer**, I want to set an account status to inactive so no further transactions or authorizations are processed.
+- As a **batch operator**, I want interest calculated on outstanding balances nightly so accounts are updated accurately each morning.
+- As a **batch operator**, I want a sequential extract of account records so I can perform portfolio analysis offline.
 
 ---
 
