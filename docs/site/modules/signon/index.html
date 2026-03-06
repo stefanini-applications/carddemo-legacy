@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signon - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #1a237e; margin-top: 0; border-bottom: 2px solid #e8eaf6; padding-bottom: 8px; }
+        h3 { color: #283593; }
+        code { background: #e8eaf6; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1a237e; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #3949ab; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 Signon Module</h1>
+        <p>User Story Development Guide — Authentication &amp; Session Management</p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Authenticates users against the VSAM user security file and routes them to the appropriate menu based on their role (regular user or admin).</p>
+            <p><strong>Business Context:</strong> Entry point for all CardDemo interactions. Every user — cardholder or administrator — must authenticate before accessing any function. The signon module determines which capabilities are exposed based on the <code>SEC-USR-TYPE</code> field.</p>
+            <p><strong>CICS Transactions:</strong> <code>CC00</code> (signon), <code>CM00</code> (main menu)</p>
+            <p><strong>VSAM Dataset:</strong> <code>AWS.M2.CARDDEMO.USRSEC.PS</code> (keyed sequential, 80-byte records)</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Authentication:</strong> As a [cardholder / admin], I want to sign in with my user ID and password so that I can access the system securely.</li>
+                <li><strong>Role Routing:</strong> As an admin, I want to be directed to the Admin Menu after login so that I can access administrative functions without extra navigation.</li>
+                <li><strong>Security:</strong> As a security officer, I want invalid credentials to be rejected with an error message so that unauthorized access is prevented.</li>
+                <li><strong>Session Exit:</strong> As a user, I want to exit the application from the main menu so that my session is properly terminated.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>CSUSR01Y copybook:</strong> Pre-defined 80-byte user record structure — no new data model needed</li>
+                <li><strong>VSAM KSDS access pattern:</strong> Standard COBOL READ with key lookup — well-established pattern across the codebase</li>
+                <li><strong>CICS COMMAREA:</strong> Session state passed via COMMAREA (COCOM01Y) — follow existing pattern</li>
+                <li><strong>BMS screen already defined:</strong> COSGN00.bms provides the signon screen layout</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> Display signon screen, read user record, validate credentials, route to menu</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Add failed login counter, add CAPTCHA logic, add session timeout warning</li>
+                <li><span class="tag tag-complex">5–8 pts</span> Integrate external identity provider, implement MFA, add audit logging to DB2</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COSGN00C.cbl</code></td><td>CICS Program</td><td>Signon logic: read USRSEC, validate, route to CM00 or CA00</td></tr>
+                <tr><td><code>COMEN01C.cbl</code></td><td>CICS Program</td><td>Main menu display and navigation for regular users</td></tr>
+                <tr><td><code>COADM01C.cbl</code></td><td>CICS Program</td><td>Admin menu display (routes to user mgmt, tran type mgmt)</td></tr>
+                <tr><td><code>COSGN00.bms</code></td><td>BMS Map</td><td>Screen definition for the signon screen</td></tr>
+                <tr><td><code>CSUSR01Y.cpy</code></td><td>Copybook</td><td>User record structure (SEC-USER-DATA, 80 bytes)</td></tr>
+                <tr><td><code>COCOM01Y.cpy</code></td><td>Copybook</td><td>COMMAREA structure for inter-transaction communication</td></tr>
+            </table>
+
+            <h3>🗄️ Data Structure</h3>
+            <pre>01 SEC-USER-DATA.
+   05 SEC-USR-ID      PIC X(08).   -- User ID (key)
+   05 SEC-USR-FNAME   PIC X(20).   -- First name
+   05 SEC-USR-LNAME   PIC X(20).   -- Last name
+   05 SEC-USR-PWD     PIC X(08).   -- Password (plain text)
+   05 SEC-USR-TYPE    PIC X(01).   -- 'U'=user, 'A'=admin
+   05 SEC-USR-FILLER  PIC X(23).</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>VSAM USRSEC file:</strong> Must be open in CICS (JCL: OPENFIL) before signon works</li>
+                <li><strong>All other modules:</strong> Depend on signon for session establishment</li>
+                <li><strong>COMMAREA (COCOM01Y):</strong> Carries user context to all downstream transactions</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given valid credentials, when user signs in, then system routes type=<code>U</code> to CM00 and type=<code>A</code> to CA00</li>
+                <li>Given invalid credentials, when user signs in, then system displays an error message and remains on CC00</li>
+                <li>Given blank user ID or password, when user attempts to sign in, then system displays field-level validation error</li>
+                <li>Given USRSEC file is unavailable, when signon is attempted, then system displays a file I/O error code</li>
+                <li>Given a successful login, when user navigates away and returns, then session context (user ID, type) is preserved in COMMAREA</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🧪 Test Data</h2>
+            <table>
+                <tr><th>User ID</th><th>Password</th><th>Type</th><th>Expected Route</th></tr>
+                <tr><td>USER0001</td><td>PASSWORD</td><td>U</td><td>CM00 - Main Menu</td></tr>
+                <tr><td>ADMIN001</td><td>PASSWORD</td><td>A</td><td>CA00 - Admin Menu</td></tr>
+                <tr><td>BADUSER1</td><td>BADPASS1</td><td>—</td><td>Error on CC00</td></tr>
+            </table>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>

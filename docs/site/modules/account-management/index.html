@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Management - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #1b5e20 0%, #388e3c 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #1b5e20; margin-top: 0; border-bottom: 2px solid #e8f5e9; padding-bottom: 8px; }
+        h3 { color: #2e7d32; }
+        code { background: #e8f5e9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1b5e20; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #388e3c; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💳 Account Management Module</h1>
+        <p>User Story Development Guide — Account View &amp; Update</p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Allows authenticated users to view and update their credit card account details including current balance, credit limits, dates, and billing zip code.</p>
+            <p><strong>Business Context:</strong> Central to the cardholder experience. Account data is the source of truth for balance management, credit availability, and billing. Read-only view (<code>CAVW</code>) allows any authenticated user; update (<code>CAUP</code>) allows modification of specific fields.</p>
+            <p><strong>CICS Transactions:</strong> <code>CAVW</code> (Account View), <code>CAUP</code> (Account Update)</p>
+            <p><strong>VSAM Dataset:</strong> <code>AWS.M2.CARDDEMO.ACCTDATA.PS</code> (KSDS, 300-byte records, keyed by ACCT-ID)</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account View:</strong> As a cardholder, I want to view my current account balance and credit limit so that I can plan my spending decisions.</li>
+                <li><strong>Account Update:</strong> As a cardholder, I want to update my billing zip code so that my billing address information stays accurate.</li>
+                <li><strong>Credit Info:</strong> As a cardholder, I want to view my cash credit limit separately from my purchase credit limit so that I know my cash advance availability.</li>
+                <li><strong>Statement Dates:</strong> As a cardholder, I want to see my account open date and expiration date so that I can track my account history.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>CVACT01Y copybook:</strong> Pre-defined 300-byte account record — all fields readily accessible</li>
+                <li><strong>Keyed VSAM access:</strong> Direct lookup by ACCT-ID (11 digits) — O(1) retrieval</li>
+                <li><strong>Existing screen layouts:</strong> COACTUP.bms and COACTVW.bms provide complete screen definitions</li>
+                <li><strong>Customer data linkage:</strong> CVCUS01Y provides customer name/address when cross-referenced with account</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> View account details (CAVW — read VSAM, display on screen)</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Update account fields with validation (zip, limits); retrieve linked customer info</li>
+                <li><span class="tag tag-complex">5–8 pts</span> Multi-account aggregation, credit availability calculation across accounts, audit trail to DB2</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COACTVWC.cbl</code></td><td>CICS Program</td><td>Read account by ACCT-ID, display read-only view</td></tr>
+                <tr><td><code>COACTUPC.cbl</code></td><td>CICS Program</td><td>Read account, accept user edits, validate, REWRITE to VSAM</td></tr>
+                <tr><td><code>COACTVW.bms</code></td><td>BMS Map</td><td>Screen definition for account view</td></tr>
+                <tr><td><code>COACTUP.bms</code></td><td>BMS Map</td><td>Screen definition for account update (editable fields)</td></tr>
+                <tr><td><code>CVACT01Y.cpy</code></td><td>Copybook</td><td>ACCOUNT-RECORD structure (300 bytes)</td></tr>
+                <tr><td><code>CVCUS01Y.cpy</code></td><td>Copybook</td><td>CUSTOMER-RECORD structure (for name display)</td></tr>
+            </table>
+
+            <h3>🗄️ Account Record Key Fields</h3>
+            <pre>01  ACCOUNT-RECORD.
+    05  ACCT-ID              PIC 9(11).     -- Primary key (11 digits)
+    05  ACCT-ACTIVE-STATUS   PIC X(01).     -- 'Y' = active
+    05  ACCT-CURR-BAL        PIC S9(10)V99. -- Current balance
+    05  ACCT-CREDIT-LIMIT    PIC S9(10)V99. -- Credit limit
+    05  ACCT-CASH-CREDIT-LIMIT PIC S9(10)V99. -- Cash credit limit
+    05  ACCT-OPEN-DATE       PIC X(10).     -- YYYY-MM-DD
+    05  ACCT-EXPIRAION-DATE  PIC X(10).     -- YYYY-MM-DD
+    05  ACCT-REISSUE-DATE    PIC X(10).     -- YYYY-MM-DD
+    05  ACCT-CURR-CYC-CREDIT PIC S9(10)V99. -- Cycle credits
+    05  ACCT-CURR-CYC-DEBIT  PIC S9(10)V99. -- Cycle debits
+    05  ACCT-ADDR-ZIP        PIC X(10).     -- Billing zip (updatable)
+    05  ACCT-GROUP-ID        PIC X(10).     -- Disclosure group ID</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>signon module:</strong> Must be authenticated; ACCT-ID passed via COMMAREA</li>
+                <li><strong>card-management module:</strong> Cards reference accounts via CARD-ACCT-ID</li>
+                <li><strong>batch-processing module:</strong> POSTTRAN and INTCALC update account balances</li>
+                <li><strong>VSAM ACCTDATA file:</strong> Must be open in CICS (JCL: OPENFIL)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given a valid account ID, when user accesses CAVW, then all account fields are displayed correctly formatted</li>
+                <li>Given account status = 'N' (inactive), when user attempts update (CAUP), then system displays appropriate status message</li>
+                <li>Given new credit limit &lt; current balance, when user submits update, then system rejects with validation error</li>
+                <li>Given new cash limit &gt; credit limit, when user submits update, then system rejects with validation error</li>
+                <li>Given valid zip code update, when submitted, then VSAM record is rewritten and confirmation message displayed</li>
+                <li>Given VSAM I/O error during update, then system displays file status error code and rolls back change</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔢 Business Rules Summary</h2>
+            <ul>
+                <li>Account active status must be <code>Y</code> to allow updates</li>
+                <li>Credit limit ≥ current balance at all times</li>
+                <li>Cash credit limit ≤ credit limit</li>
+                <li>All monetary fields use COMP-3 (packed decimal) format internally</li>
+                <li>Date fields stored as <code>YYYY-MM-DD</code> (10 chars)</li>
+                <li>ACCT-GROUP-ID links to disclosure groups for interest rate determination (used in batch)</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>

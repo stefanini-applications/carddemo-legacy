@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Processing - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #bf360c 0%, #e64a19 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #bf360c; margin-top: 0; border-bottom: 2px solid #fbe9e7; padding-bottom: 8px; }
+        h3 { color: #d84315; }
+        code { background: #fbe9e7; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #bf360c; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #e64a19; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💸 Transaction Processing Module</h1>
+        <p>User Story Development Guide — List, View, Add &amp; Report Transactions</p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> View transaction history by account, view individual transaction details, add new manual transactions, and generate transaction reports from the CICS online environment.</p>
+            <p><strong>Business Context:</strong> Transactions are the core financial events in CardDemo. This module handles the online (real-time) side — cardholders browsing their history and adding manual entries. The batch side (POSTTRAN, INTCALC) posts daily transactions and calculates interest. Reports are submitted to batch from the online CR00 transaction.</p>
+            <p><strong>CICS Transactions:</strong> <code>CT00</code> (list), <code>CT01</code> (view), <code>CT02</code> (add), <code>CR00</code> (report)</p>
+            <p><strong>VSAM Dataset:</strong> <code>AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS</code> (KSDS with AIX, 350-byte records)</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Transaction List:</strong> As a cardholder, I want to view my transaction history so that I can track and reconcile my spending.</li>
+                <li><strong>Transaction Detail:</strong> As a cardholder, I want to view the details of a specific transaction (merchant, amount, date) so that I can verify charges on my account.</li>
+                <li><strong>Manual Entry:</strong> As a cardholder, I want to add a manual transaction entry so that out-of-band purchases are recorded in the system.</li>
+                <li><strong>Report:</strong> As a cardholder, I want to generate a transaction report for a date range so that I can review my activity for a billing period.</li>
+                <li><strong>Dispute:</strong> As a cardholder, I want to flag a suspicious transaction so that I can initiate a dispute investigation.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>CVTRA05Y copybook:</strong> Pre-defined 350-byte TRAN-RECORD — 16-char TRAN-ID as primary key</li>
+                <li><strong>VSAM KSDS with AIX:</strong> Transaction lookup by ID or alternate index (card number) — both access modes available</li>
+                <li><strong>Existing screen BMS maps:</strong> COTRN00–02.bms cover all three online screens</li>
+                <li><strong>Transaction type + category codes:</strong> Reference VSAM files TRANTYPE and TRANCATG for descriptions</li>
+                <li><strong>Report job already exists:</strong> TRANREPT (CBTRN03C) batch job handles report generation — online just submits it</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> List/view transactions by account (read VSAM, display)</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Add manual transaction with type/category validation; paged list with navigation</li>
+                <li><span class="tag tag-complex">5–8 pts</span> Transaction dispute workflow, cross-reference to merchant data, multi-file date-range filtering, report generation trigger</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COTRN00C.cbl</code></td><td>CICS Program</td><td>Paginated transaction list for an account/card</td></tr>
+                <tr><td><code>COTRN01C.cbl</code></td><td>CICS Program</td><td>Display single transaction detail record</td></tr>
+                <tr><td><code>COTRN02C.cbl</code></td><td>CICS Program</td><td>Add new transaction record to VSAM KSDS</td></tr>
+                <tr><td><code>CORPT00C.cbl</code></td><td>CICS Program</td><td>Transaction report screen; submits TRANREPT batch via CICS</td></tr>
+                <tr><td><code>CBTRN03C.cbl</code></td><td>Batch Program</td><td>Transaction report generation (submitted by CR00)</td></tr>
+                <tr><td><code>CVTRA05Y.cpy</code></td><td>Copybook</td><td>TRAN-RECORD structure (350 bytes)</td></tr>
+                <tr><td><code>CVTRA06Y.cpy</code></td><td>Copybook</td><td>Daily transaction record (batch input)</td></tr>
+            </table>
+
+            <h3>🗄️ Transaction Record Structure</h3>
+            <pre>01  TRAN-RECORD.
+    05  TRAN-ID            PIC X(16).      -- Primary key
+    05  TRAN-TYPE-CD       PIC X(02).      -- e.g. "PR" (purchase), "CR" (credit)
+    05  TRAN-CAT-CD        PIC 9(04).      -- Category (e.g. 0001=groceries)
+    05  TRAN-SOURCE        PIC X(10).      -- Source system identifier
+    05  TRAN-DESC          PIC X(100).     -- Description
+    05  TRAN-AMT           PIC S9(09)V99.  -- Amount (+ debit, - credit)
+    05  TRAN-MERCHANT-ID   PIC 9(09).
+    05  TRAN-MERCHANT-NAME PIC X(50).
+    05  TRAN-MERCHANT-CITY PIC X(50).
+    05  TRAN-MERCHANT-ZIP  PIC X(10).
+    05  TRAN-CARD-NUM      PIC X(16).      -- Card used (links to CARDXREF)
+    05  TRAN-ORIG-TS       PIC X(26).      -- YYYY-MM-DD HH:MM:SS.mmmmmm
+    05  TRAN-PROC-TS       PIC X(26).      -- Processing timestamp</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>card-management:</strong> TRAN-CARD-NUM must resolve via CARDXREF to an account</li>
+                <li><strong>account-management:</strong> Transaction amounts update ACCT-CURR-BAL (via batch POSTTRAN)</li>
+                <li><strong>batch-processing:</strong> POSTTRAN reads DALYTRAN and writes to TRANSACT.VSAM.KSDS; INTCALC uses category balances</li>
+                <li><strong>transaction-type-management (optional):</strong> TRAN-TYPE-CD validated against TRANTYPE reference data</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given a valid account, when accessing CT00, then transactions are listed in reverse chronological order</li>
+                <li>Given a transaction ID, when accessing CT01, then all 350-byte record fields are displayed correctly</li>
+                <li>Given new transaction via CT02, when card number is invalid (not in CARDXREF), then system rejects with error</li>
+                <li>Given new transaction via CT02, when amount is zero or negative (for a debit), then system rejects with validation error</li>
+                <li>Given valid transaction add via CT02, then TRAN-ORIG-TS is set to current system timestamp</li>
+                <li>Given report request CR00, when submitted, then batch job TRANREPT is triggered and completion message displayed</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>

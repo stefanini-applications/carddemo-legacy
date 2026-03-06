@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Payment - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #006064 0%, #00838f 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #006064; margin-top: 0; border-bottom: 2px solid #e0f7fa; padding-bottom: 8px; }
+        h3 { color: #00838f; }
+        code { background: #e0f7fa; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #006064; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #00838f; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📄 Bill Payment Module</h1>
+        <p>User Story Development Guide — Credit Card Bill Payment Processing</p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Process credit card bill payments — the cardholder enters a payment amount, which is applied immediately to reduce the account's current balance in the VSAM account file.</p>
+            <p><strong>Business Context:</strong> Bill payment is a critical financial operation that directly modifies account balances. Unlike transactions (which are batch-posted), bill payments are applied in real time via CICS. The account must be retrieved via card number cross-reference, then the balance updated.</p>
+            <p><strong>CICS Transaction:</strong> <code>CB00</code> → <code>COBIL00C</code></p>
+            <p><strong>VSAM Datasets:</strong> <code>AWS.M2.CARDDEMO.ACCTDATA.PS</code> (balance update), <code>AWS.M2.CARDDEMO.CARDXREF.PS</code> (card-to-account lookup)</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Payment Entry:</strong> As a cardholder, I want to pay my credit card bill online so that my account balance is reduced immediately.</li>
+                <li><strong>Payment Confirmation:</strong> As a cardholder, I want to review the payment amount before confirming so that I can catch entry errors before they are processed.</li>
+                <li><strong>Balance Display:</strong> As a cardholder, I want to see my current balance before and after payment so that I can confirm the payment was applied correctly.</li>
+                <li><strong>Minimum Payment:</strong> As a cardholder, I want the system to display my minimum payment due so that I know the minimum amount I must pay.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>CVACT01Y copybook:</strong> Account record with ACCT-CURR-BAL field — direct REWRITE after update</li>
+                <li><strong>CVACT03Y copybook:</strong> CARDXREF lookup allows account retrieval from card number</li>
+                <li><strong>COBIL00.bms:</strong> Screen layout already defined for payment input</li>
+                <li><strong>Pattern established:</strong> Same VSAM REWRITE pattern used in account-management CAUP</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> Enter amount, validate > 0, read account, subtract from balance, REWRITE</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Add minimum payment display, payment history tracking, multiple payment methods</li>
+                <li><span class="tag tag-complex">5–8 pts</span> EFT/ACH integration via CUST-EFT-ACCOUNT-ID, payment scheduling, payment reversal</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COBIL00C.cbl</code></td><td>CICS Program</td><td>Payment processing: validate amount, lookup account, update balance, display confirmation</td></tr>
+                <tr><td><code>COBIL00.bms</code></td><td>BMS Map</td><td>Bill payment screen definition</td></tr>
+                <tr><td><code>CVACT01Y.cpy</code></td><td>Copybook</td><td>Account record (ACCT-CURR-BAL updated)</td></tr>
+                <tr><td><code>CVACT03Y.cpy</code></td><td>Copybook</td><td>CARDXREF for card-to-account resolution</td></tr>
+            </table>
+
+            <h3>🔗 Payment Flow</h3>
+            <pre>1. Cardholder enters card number + payment amount on CB00 screen
+2. COBIL00C reads CARDXREF by CARD-NUM → get XREF-ACCT-ID
+3. Read ACCTDATA by ACCT-ID → get current ACCT-CURR-BAL
+4. Validate: amount > 0, account is active
+5. New balance = ACCT-CURR-BAL - payment amount
+6. REWRITE account record with new balance
+7. Display confirmation with new balance</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>account-management:</strong> Shares ACCTDATA VSAM file; same REWRITE pattern</li>
+                <li><strong>card-management:</strong> Uses CARDXREF for card-to-account lookup</li>
+                <li><strong>signon:</strong> Authentication required; user context from COMMAREA</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given valid card and positive payment amount, when submitted, then ACCT-CURR-BAL is reduced by payment amount</li>
+                <li>Given payment amount = 0, when submitted, then system rejects with "amount must be greater than zero" error</li>
+                <li>Given payment amount &gt; current balance, when submitted, then system either rejects (overpayment) or creates credit balance (per business rule)</li>
+                <li>Given invalid card number, when submitted, then system displays "card not found" error</li>
+                <li>Given inactive account, when payment submitted, then system displays account status error</li>
+                <li>Given successful payment, then confirmation screen shows: amount paid, previous balance, new balance</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>

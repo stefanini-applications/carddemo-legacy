@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Management - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #4a148c; margin-top: 0; border-bottom: 2px solid #f3e5f5; padding-bottom: 8px; }
+        h3 { color: #6a1b9a; }
+        code { background: #f3e5f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #4a148c; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #7b1fa2; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🃏 Card Management Module</h1>
+        <p>User Story Development Guide — Credit Card List, View &amp; Update</p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Manage credit cards associated with a cardholder's account: list all cards, view individual card details (number, CVV, expiry, status), and update card information.</p>
+            <p><strong>Business Context:</strong> Cards are the physical instruments of account access. The card management module provides visibility into what cards exist on an account and enables lifecycle operations (issuance, activation, deactivation). The CARDXREF dataset is the critical cross-reference linking card number → customer → account.</p>
+            <p><strong>CICS Transactions:</strong> <code>CCLI</code> (Card List), <code>CCDL</code> (Card View/Select), <code>CCUP</code> (Card Update)</p>
+            <p><strong>VSAM Datasets:</strong> <code>AWS.M2.CARDDEMO.CARDDATA.PS</code>, <code>AWS.M2.CARDDEMO.CARDXREF.PS</code></p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Card List:</strong> As a cardholder, I want to see all cards linked to my account so that I have a complete overview of my card portfolio.</li>
+                <li><strong>Card View:</strong> As a cardholder, I want to view my card details (number, expiry, embossed name) so that I can verify the card is valid for use.</li>
+                <li><strong>Card Deactivation:</strong> As a cardholder, I want to deactivate a lost or stolen card so that unauthorized charges are prevented immediately.</li>
+                <li><strong>Card Update:</strong> As a cardholder, I want to update the embossed name on my card so that it reflects a legal name change.</li>
+                <li><strong>XREF Integrity:</strong> As a system, I want the card-to-account cross-reference to be maintained so that transaction routing is always accurate.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>CVACT02Y copybook:</strong> Pre-defined 150-byte card record — 16-digit card number as key</li>
+                <li><strong>CVACT03Y copybook:</strong> Pre-defined 50-byte XREF record — links card → customer → account</li>
+                <li><strong>Dual-key VSAM on CARDXREF:</strong> Supports lookup by card number OR account ID (AIX)</li>
+                <li><strong>Existing BMS maps:</strong> COCRDLI.bms, COCRDSL.bms, COCRDUP.bms fully define all three screens</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> View card list for account, view single card detail</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Update card status (activate/deactivate), update embossed name; require XREF consistency check</li>
+                <li><span class="tag tag-complex">5–8 pts</span> New card issuance (create CARDDATA + CARDXREF records), card replacement workflow, fraud block integration</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COCRDLIC.cbl</code></td><td>CICS Program</td><td>Paginated list of cards for an account (XREF lookup)</td></tr>
+                <tr><td><code>COCRDSLC.cbl</code></td><td>CICS Program</td><td>View selected card detail from CARDDATA</td></tr>
+                <tr><td><code>COCRDUPC.cbl</code></td><td>CICS Program</td><td>Update card record in CARDDATA (name, expiry, status)</td></tr>
+                <tr><td><code>CVACT02Y.cpy</code></td><td>Copybook</td><td>CARD-RECORD structure (150 bytes)</td></tr>
+                <tr><td><code>CVACT03Y.cpy</code></td><td>Copybook</td><td>CARD-XREF-RECORD structure (50 bytes)</td></tr>
+            </table>
+
+            <h3>🗄️ Key Data Structures</h3>
+            <pre>-- CARD-RECORD (CVACT02Y, 150 bytes)
+01  CARD-RECORD.
+    05  CARD-NUM            PIC X(16).  -- Primary key
+    05  CARD-ACCT-ID        PIC 9(11).  -- Linked account
+    05  CARD-CVV-CD         PIC 9(03).  -- CVV security code
+    05  CARD-EMBOSSED-NAME  PIC X(50).  -- Name on card
+    05  CARD-EXPIRAION-DATE PIC X(10).  -- YYYY-MM-DD
+    05  CARD-ACTIVE-STATUS  PIC X(01).  -- 'Y'=active, 'N'=inactive
+
+-- CARD-XREF-RECORD (CVACT03Y, 50 bytes)
+01 CARD-XREF-RECORD.
+    05  XREF-CARD-NUM  PIC X(16).  -- Card number (primary key)
+    05  XREF-CUST-ID   PIC 9(09).  -- Customer ID
+    05  XREF-ACCT-ID   PIC 9(11).  -- Account ID (AIX key)</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>account-management:</strong> CARD-ACCT-ID must reference a valid account in ACCTDATA</li>
+                <li><strong>transaction-processing:</strong> TRAN-CARD-NUM resolved to account via CARDXREF during posting</li>
+                <li><strong>signon:</strong> Account context required from COMMAREA</li>
+                <li><strong>VSAM CARDDATA and CARDXREF:</strong> Both must be open in CICS (JCL: OPENFIL)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given a valid account ID, when accessing CCLI, then all cards linked via CARDXREF are listed</li>
+                <li>Given no cards on account, when accessing CCLI, then system displays "no cards found" message</li>
+                <li>Given card status = 'Y', when user deactivates via CCUP, then status is set to 'N' and VSAM record is rewritten</li>
+                <li>Given card status = 'N' (inactive), when user views card, then system displays deactivation indicator</li>
+                <li>Given expiry date update, when the date is in the past, then system rejects with validation error</li>
+                <li>Given a VSAM write error during update, then system displays error code and card is not changed</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>

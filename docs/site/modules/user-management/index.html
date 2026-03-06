@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #37474f 0%, #546e7a 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #37474f; margin-top: 0; border-bottom: 2px solid #eceff1; padding-bottom: 8px; }
+        h3 { color: #455a64; }
+        code { background: #eceff1; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #37474f; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #546e7a; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👥 User Management Module</h1>
+        <p>User Story Development Guide — Admin User CRUD Operations</p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Admin-only module enabling full CRUD (Create, Read, Update, Delete) operations on user accounts stored in the VSAM user security file.</p>
+            <p><strong>Business Context:</strong> User management controls who can access CardDemo and with what privileges. Only admin users (type = <code>A</code>) can access this module via the Admin Menu (<code>CA00</code>). Regular users cannot see or access these functions. This is the primary access control mechanism for the application.</p>
+            <p><strong>CICS Transactions:</strong> <code>CU00</code> (list), <code>CU01</code> (add), <code>CU02</code> (update), <code>CU03</code> (delete)</p>
+            <p><strong>VSAM Dataset:</strong> <code>AWS.M2.CARDDEMO.USRSEC.PS</code> (KSDS, 80-byte records, keyed by SEC-USR-ID)</p>
+            <div class="warning">⚠️ <strong>Security Note:</strong> Passwords are stored as plain text (8 chars) in the current implementation. Password encryption should be addressed in any modernization effort.</div>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>List Users:</strong> As an admin, I want to list all system users so that I can audit who has access.</li>
+                <li><strong>Add User:</strong> As an admin, I want to create a new user account with role assignment so that new employees can access the system.</li>
+                <li><strong>Update User:</strong> As an admin, I want to update a user's name or password so that account information stays current.</li>
+                <li><strong>Delete User:</strong> As an admin, I want to delete a user account so that terminated employees immediately lose system access.</li>
+                <li><strong>Role Assignment:</strong> As an admin, I want to set a user's type (regular/admin) so that access privileges match their responsibilities.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>CSUSR01Y copybook:</strong> Pre-defined 80-byte record — all user fields readily accessible</li>
+                <li><strong>Four existing BMS maps:</strong> COUSR00–03.bms cover all four CRUD screens completely</li>
+                <li><strong>VSAM KSDS direct access:</strong> User ID is the key — O(1) lookup for add/update/delete</li>
+                <li><strong>Admin access control established:</strong> CA00 already gates access to this module</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> List users (paginated VSAM read), read/display single user</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Add user (duplicate check + WRITE), update user (READ + REWRITE), delete user (READ + DELETE)</li>
+                <li><span class="tag tag-complex">5–8 pts</span> Password hashing integration, role-based permission matrix, audit log to DB2, self-service password reset</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COUSR00C.cbl</code></td><td>CICS Program</td><td>Paginated list of all users from USRSEC VSAM</td></tr>
+                <tr><td><code>COUSR01C.cbl</code></td><td>CICS Program</td><td>Add new user; check for duplicate ID, then WRITE</td></tr>
+                <tr><td><code>COUSR02C.cbl</code></td><td>CICS Program</td><td>Update existing user (name, password, type)</td></tr>
+                <tr><td><code>COUSR03C.cbl</code></td><td>CICS Program</td><td>Delete user record from USRSEC VSAM</td></tr>
+                <tr><td><code>COADM01C.cbl</code></td><td>CICS Program</td><td>Admin menu; routes to user management and other admin functions</td></tr>
+                <tr><td><code>CSUSR01Y.cpy</code></td><td>Copybook</td><td>SEC-USER-DATA structure (80 bytes)</td></tr>
+            </table>
+
+            <h3>🗄️ User Record Structure</h3>
+            <pre>01 SEC-USER-DATA.
+   05 SEC-USR-ID      PIC X(08). -- Primary key; must be unique
+   05 SEC-USR-FNAME   PIC X(20). -- First name
+   05 SEC-USR-LNAME   PIC X(20). -- Last name
+   05 SEC-USR-PWD     PIC X(08). -- Password (plain text, 8 chars)
+   05 SEC-USR-TYPE    PIC X(01). -- 'U'=regular user, 'A'=admin
+   05 SEC-USR-FILLER  PIC X(23). -- Reserved</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>signon module:</strong> USRSEC is the authentication source — changes here affect who can log in</li>
+                <li><strong>Admin access:</strong> Only accessible after admin login via CA00 (COADM01C)</li>
+                <li><strong>VSAM USRSEC file:</strong> Must be open in CICS (JCL: OPENFIL)</li>
+                <li><strong>transaction-type-management (optional):</strong> Also accessible from admin menu alongside user management</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given admin is authenticated, when accessing CU00, then all existing users are listed (paginated, 10 per page)</li>
+                <li>Given a new unique user ID, when adding via CU01, then VSAM WRITE succeeds and confirmation is displayed</li>
+                <li>Given a duplicate user ID, when adding via CU01, then system rejects with "user ID already exists" error</li>
+                <li>Given user ID exists, when updating via CU02, then fields are updated and VSAM REWRITE succeeds</li>
+                <li>Given user ID exists, when deleting via CU03, then VSAM DELETE succeeds and user can no longer log in</li>
+                <li>Given blank user ID or password, when adding via CU01, then system rejects with field validation error</li>
+                <li>Given user type not 'U' or 'A', when saving, then system rejects with invalid type error</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>

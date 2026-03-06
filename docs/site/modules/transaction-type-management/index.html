@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Type Management - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f4f6fa; color: #222; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white; padding: 36px 20px; }
+        .header h1 { margin: 0 0 8px; font-size: 2em; }
+        .header p { margin: 0; opacity: 0.9; }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        h2 { color: #1a237e; margin-top: 0; border-bottom: 2px solid #e8eaf6; padding-bottom: 8px; }
+        h3 { color: #283593; }
+        code { background: #e8eaf6; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #263238; color: #cfd8dc; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 0.88em; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1a237e; color: white; padding: 10px 12px; text-align: left; }
+        td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.78em; font-weight: 600; }
+        .tag-simple { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-complex { background: #fce4ec; color: #c62828; }
+        .optional-badge { background: #fce4ec; color: #c62828; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 600; }
+        footer { text-align: center; color: #888; font-size: 0.85em; margin-top: 30px; }
+        a { color: #3949ab; }
+        ul { line-height: 1.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗂️ Transaction Type Management Module</h1>
+        <p>User Story Development Guide — DB2 Reference Data Maintenance &nbsp;<span class="optional-badge">Optional Module</span></p>
+    </div>
+    <div class="container">
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Admin maintenance of transaction type reference data in DB2. Demonstrates embedded static SQL, forward/backward cursor processing, and full CRUD operations against a relational database from a CICS environment.</p>
+            <p><strong>Business Context:</strong> Transaction types (e.g., "PR" = Purchase, "CR" = Credit) are reference data used throughout the application to categorize and classify transactions. Maintaining this data in DB2 (rather than static VSAM files) demonstrates the relational integration patterns common in modernized mainframe applications. A batch extract (<code>TRANEXTR</code>) synchronizes DB2 data to VSAM for use in existing batch jobs.</p>
+            <p><strong>Prerequisites:</strong> DB2 available; <code>CREADB21</code> JCL executed to create and load tables.</p>
+            <p><strong>CICS Transactions:</strong> <code>CTTU</code> (add/edit), <code>CTLI</code> (list/update/delete)</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Add Type:</strong> As an admin, I want to add a new transaction type in DB2 so that new transaction categories can be processed by the system.</li>
+                <li><strong>Update Type:</strong> As an admin, I want to update the description of a transaction type so that the reference data accurately reflects current business terms.</li>
+                <li><strong>Delete Type:</strong> As an admin, I want to delete obsolete transaction types so that the reference table stays clean and relevant.</li>
+                <li><strong>List Types:</strong> As an admin, I want to page through the transaction type list so that I can review all defined types.</li>
+                <li><strong>VSAM Sync:</strong> As a system operator, I want to run TRANEXTR to extract DB2 types to VSAM so that batch processing uses the latest reference data.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>DB2 patterns established:</strong> <code>COTRTUPC</code> and <code>COTRTLIC</code> demonstrate host variables, cursors, SQLCA error handling — copy and adapt</li>
+                <li><strong>Existing DDL:</strong> <code>TRNTYPE.ddl</code> and <code>TRNTYCAT.ddl</code> define the complete schema</li>
+                <li><strong>Existing BMS maps:</strong> <code>COTRTUP.bms</code> and <code>COTRTLI.bms</code> provide screen definitions</li>
+                <li><strong>DB2 SQLCA pattern:</strong> Standard SQLCODE/SQLSTATE error handling used throughout — established convention</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><span class="tag tag-simple">1–2 pts</span> List transaction types (DB2 forward cursor, display CTLI screen)</li>
+                <li><span class="tag tag-medium">3–5 pts</span> Add/update transaction type (CTTU with host variable SQL INSERT/UPDATE + SQLCA handling)</li>
+                <li><span class="tag tag-complex">5–8 pts</span> Delete with referential integrity checks, backward cursor navigation, add TRANCAT entries for new type, TRANEXTR sync</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Responsibility</th></tr>
+                <tr><td><code>COTRTUPC.cbl</code></td><td>CICS/DB2 Program</td><td>Add/edit transaction type — INSERT or UPDATE via embedded SQL with host variables</td></tr>
+                <tr><td><code>COTRTLIC.cbl</code></td><td>CICS/DB2 Program</td><td>List/update/delete — forward and backward DB2 cursor processing</td></tr>
+                <tr><td><code>COBTUPDT.cbl</code></td><td>Batch Program</td><td>Batch maintenance of DB2 transaction type table</td></tr>
+                <tr><td><code>COTRTUP.bms</code></td><td>BMS Map</td><td>Add/edit screen definition</td></tr>
+                <tr><td><code>COTRTLI.bms</code></td><td>BMS Map</td><td>List screen definition</td></tr>
+                <tr><td><code>TRNTYPE.ddl</code></td><td>DB2 DDL</td><td>Transaction type table schema</td></tr>
+                <tr><td><code>TRNTYCAT.ddl</code></td><td>DB2 DDL</td><td>Transaction type category table schema</td></tr>
+                <tr><td><code>DCLTRTYP.dcl</code></td><td>DB2 DCL</td><td>DECLARE TABLE for host variable declarations</td></tr>
+            </table>
+
+            <h3>🗄️ DB2 Table Structure</h3>
+            <pre>-- TRNTYPE table (equivalent to CVTRA03Y / TRANTYPE.PS)
+TRAN-TYPE      CHAR(2)    NOT NULL  -- Primary key (e.g. 'PR', 'CR')
+TRAN-TYPE-DESC VARCHAR(50)          -- Description
+
+-- TRNTYCAT table (equivalent to CVTRA04Y / TRANCATG.PS)
+TRAN-TYPE-CD   CHAR(2)    NOT NULL  -- FK to TRNTYPE
+TRAN-CAT-CD    INTEGER    NOT NULL  -- Category code
+TRAN-CAT-DESC  VARCHAR(50)          -- Category description</pre>
+
+            <h3>🔗 DB2 Cursor Patterns Used</h3>
+            <pre>-- Forward cursor (COTRTLIC)
+EXEC SQL DECLARE TRNCUR CURSOR FOR
+    SELECT TRAN-TYPE, TRAN-TYPE-DESC FROM TRNTYPE
+    ORDER BY TRAN-TYPE
+END-EXEC
+
+-- Backward cursor (COTRTLIC backward navigation)
+EXEC SQL DECLARE TRNCURB CURSOR WITH HOLD FOR
+    SELECT TRAN-TYPE, TRAN-TYPE-DESC FROM TRNTYPE
+    ORDER BY TRAN-TYPE DESC
+END-EXEC</pre>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>DB2:</strong> Must be available from CICS; DB2 precompiler used during program compile (CICDBCMP.jcl)</li>
+                <li><strong>transaction-processing:</strong> TRAN-TYPE-CD in transactions must exist in TRNTYPE/TRANTYPE reference</li>
+                <li><strong>batch-processing:</strong> TRANEXTR extracts DB2 types to VSAM TRANTYPE.PS for use in POSTTRAN, INTCALC</li>
+                <li><strong>user-management:</strong> Only admin users can access CTTU/CTLI (via CA00 admin menu)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <ul>
+                <li>Given admin accesses CTLI, when navigating forward, then transaction types are listed in alphabetical order by type code</li>
+                <li>Given admin adds new type via CTTU with unique type code, then DB2 INSERT succeeds (SQLCODE = 0) and confirmation displayed</li>
+                <li>Given admin adds duplicate type code via CTTU, then DB2 rejects with SQLCODE -803 (unique constraint) and error displayed</li>
+                <li>Given admin deletes a type code via CTLI, then DB2 DELETE succeeds and type no longer appears in list</li>
+                <li>Given TRANEXTR runs after DB2 update, then VSAM TRANTYPE.PS contains all current DB2 transaction types</li>
+                <li>Given DB2 is unavailable, when CTTU/CTLI accessed, then SQLCA error displayed and no partial changes made</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../index.html">← Back to Module Index</a></p>
+            <p><em>CardDemo v1.0 — Last updated: 2026-03-06</em></p>
+        </footer>
+    </div>
+</body>
+</html>
