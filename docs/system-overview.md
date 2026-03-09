@@ -156,18 +156,23 @@
 
 ### 4. Transactions
 **ID:** `transactions`  
-**Purpose:** Allows users to list, view, and add financial transactions. Supports both online (CICS) transaction entry and batch transaction posting from the daily transaction file.  
+**Purpose:** Manages the full lifecycle of credit card financial transactions in CardDemo. Provides online CICS screens for listing, viewing, and adding transactions, plus a batch JCL pipeline for end-of-day posting, reporting, and data migration. Every spending event, payment, and fee ultimately produces a record in the TRANSACT VSAM KSDS.  
 **Key Components:**
-- `COTRN00C` – Transaction list CICS program (CT00 transaction)
-- `COTRN01C` – Transaction view CICS program (CT01 transaction)
-- `COTRN02C` – Transaction add CICS program (CT02 transaction)
-- `CBTRN01C` – Batch: Read transactions sequentially
-- `CBTRN02C` – Batch: Post daily transactions (POSTTRAN job)
-- `CBTRN03C` – Batch: Transaction reporting (TRANREPT job, triggered from CICS CR00)
-- `CBEXPORT` – Batch: Export transaction data
-- `CBIMPORT` – Batch: Import transaction data
-- `CVTRA05Y.cpy` – Transaction record layout (KSDS, 350-byte)
-- `CVTRA06Y.cpy` – Daily transaction record layout
+- `COTRN00C` – Transaction list CICS program (CT00); browse TRANSACT KSDS 10 records per page with PF7/PF8 paging
+- `COTRN01C` – Transaction detail view CICS program (CT01); keyed read by TRAN-ID
+- `COTRN02C` – Add new transaction CICS program (CT02); validates card via CCXREF, resolves account, calls CSUTLDTC date utility, writes to TRANSACT VSAM
+- `CBTRN01C` – Batch: Sequential read utility for TRANSACT VSAM
+- `CBTRN02C` – Batch: Post daily transactions from DALYTRAN PS file to TRANSACT VSAM; validates card/account, updates TCATBAL category balances, writes rejects to DALYREJS (POSTTRAN job)
+- `CBTRN03C` – Batch: Generate dated transaction detail report with page/account/grand totals; reads TRANTYPE and TRANCATG reference files (TRANREPT job, triggered from CICS CR00)
+- `CBEXPORT` – Batch: Export full customer+account+card+transaction profiles to multi-record flat file for branch migration
+- `CBIMPORT` – Batch: Import migration export file; validate checksums; split into normalized VSAM output files
+- `CVTRA05Y.cpy` – TRANSACT VSAM record layout (KSDS, 350-byte, key=TRAN-ID, AIX on TRAN-CARD-NUM)
+- `CVTRA06Y.cpy` – DALYTRAN daily transaction record layout (same 350-byte structure)
+- `CVTRA01Y.cpy` – Transaction category balance record (TCATBALF, 50-byte)
+- `CVTRA02Y.cpy` – Disclosure group / interest rate record (DISCGRP, 50-byte)
+- `CVTRA03Y.cpy` – Transaction type reference record (TRANTYPE VSAM, 60-byte)
+- `CVTRA04Y.cpy` – Transaction category reference record (TRANCATG VSAM, 60-byte)
+- `CVTRA07Y.cpy` – Report header and detail line layouts for CBTRN03C
 - `COTRN00.bms` / `COTRN01.bms` / `COTRN02.bms` – BMS screen maps
 - TRANSACT VSAM (`AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS`)
 - DALYTRAN file (`AWS.M2.CARDDEMO.DALYTRAN.PS`)
@@ -175,32 +180,59 @@
 **CICS Transactions:**
 | Transaction | Program   | Function |
 |:-----------|:---------|:---------|
-| CT00       | COTRN00C | List transactions (with forward/back paging) |
-| CT01       | COTRN01C | View transaction details |
-| CT02       | COTRN02C | Add new transaction |
+| CT00       | COTRN00C | List transactions — 10/page, PF7/PF8 browse, card-number filter via COMMAREA |
+| CT01       | COTRN01C | View full transaction detail by TRAN-ID |
+| CT02       | COTRN02C | Add new transaction; validates card, account, and date before writing to VSAM |
+
+**Batch Jobs:**
+| Job       | Program   | Purpose |
+|:---------|:---------|:-------|
+| POSTTRAN  | CBTRN02C | Post DALYTRAN to TRANSACT; RC=0 clean, RC=4 on rejects |
+| TRANREPT  | CBTRN03C | Generate transaction detail report for a date range |
+| TRANBKP   | IDCAMS   | Backup TRANSACT before posting |
+| COMBTRAN  | SORT     | Combine daily and system transactions |
+| TRANIDX   | IDCAMS   | Rebuild TRANSACT card-number AIX post-posting |
+| CBEXPORT  | CBEXPORT | Export all data for branch migration |
+| CBIMPORT  | CBIMPORT | Import migration export file |
 
 **Transaction Data Model (`CVTRA05Y`):**
 ```cobol
 01  TRAN-RECORD.
-    05  TRAN-ID              PIC X(16).       -- Transaction identifier
-    05  TRAN-TYPE-CD         PIC X(02).       -- Transaction type code
-    05  TRAN-CAT-CD          PIC 9(04).       -- Category code
+    05  TRAN-ID              PIC X(16).       -- Transaction identifier (primary key)
+    05  TRAN-TYPE-CD         PIC X(02).       -- Type code → refs TRANTYPE VSAM / DB2
+    05  TRAN-CAT-CD          PIC 9(04).       -- Category code → refs TRANCATG VSAM
     05  TRAN-SOURCE          PIC X(10).       -- Source system
     05  TRAN-DESC            PIC X(100).      -- Description
-    05  TRAN-AMT             PIC S9(09)V99.   -- Amount
+    05  TRAN-AMT             PIC S9(09)V99.   -- Amount (signed)
     05  TRAN-MERCHANT-ID     PIC 9(09).       -- Merchant identifier
     05  TRAN-MERCHANT-NAME   PIC X(50).       -- Merchant name
     05  TRAN-MERCHANT-CITY   PIC X(50).       -- Merchant city
     05  TRAN-MERCHANT-ZIP    PIC X(10).       -- Merchant ZIP
-    05  TRAN-CARD-NUM        PIC X(16).       -- Card number used
-    05  TRAN-ORIG-TS         PIC X(26).       -- Original timestamp
-    05  TRAN-PROC-TS         PIC X(26).       -- Processing timestamp
+    05  TRAN-CARD-NUM        PIC X(16).       -- Card number used (AIX key)
+    05  TRAN-ORIG-TS         PIC X(26).       -- Original transaction timestamp
+    05  TRAN-PROC-TS         PIC X(26).       -- Processing/posting timestamp
+    05  FILLER               PIC X(20).       -- Reserved (total = 350 bytes)
 ```
+
+**Dependencies:**
+- Upstream: `authentication` (signon required), `accounts` (ACCTDAT VSAM for CT02 validation), `credit-cards` (CARDXREF for card→account lookup)
+- Downstream: `reports` (CBTRN03C), `bill-payment` (writes payment transactions to TRANSACT), `batch-processing` (TCATBALF consumed by interest calculation)
+- Optional: `transaction-type-db2` manages the type codes referenced by TRAN-TYPE-CD
+
+**Business Rules:**
+- TRAN-ID is a 16-character unique key; COTRN02C generates it at add-time; CBTRN02C uses DALYTRAN-ID
+- CBTRN02C validates card number (reason 100 = not in XREFFILE) then account (reason 101 = not in ACCTFILE); rejects go to DALYREJS with RC=4
+- CBTRN02C updates TCATBAL category-balance buckets for each accepted transaction — critical for CBACT04C interest calculation
+- TRANIDX (AIX rebuild) must run after POSTTRAN to keep card-number lookups accurate
+- CBTRN03C report filters by TRAN-PROC-TS date range supplied via DATEPARM file
+- CBEXPORT/CBIMPORT include transactions as part of full customer-profile migration records
 
 **User Story Examples:**
 - As a **cardholder**, I want to list my recent transactions so I can monitor spending.
-- As a **cardholder**, I want to add a new transaction so charges are recorded in my account.
+- As a **cardholder**, I want to view full transaction details including merchant information so I can verify a charge.
+- As an **operator**, I want to add a transaction manually so charges missing from the daily file can be recorded.
 - As a **batch operator**, I want daily transactions posted to accounts overnight so balances reflect all activity.
+- As a **batch operator**, I want rejected transactions written to a reject file so I can identify and resolve data issues.
 - As a **cardholder**, I want to export my transaction history so I can analyze spending in external tools.
 
 ---
