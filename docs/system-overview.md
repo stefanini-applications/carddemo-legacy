@@ -207,28 +207,60 @@
 
 ### 5. Bill Payment
 **ID:** `bill-payment`  
-**Purpose:** Enables cardholders to submit bill payments against their credit card account balance.  
+**Purpose:** Enables cardholders to pay their full outstanding credit card account balance online through a CICS 3270 terminal session. The module reads the current account balance, prompts for explicit Y/N confirmation, creates a payment transaction record (type code `02`) in the TRANSACT VSAM file, and atomically decrements the account balance in ACCTDAT.  
 **Key Components:**
-- `COBIL00C` – Bill payment CICS program (CB00 transaction)
-- `COBIL00.bms` – BMS screen map for bill payment
-- `CVACT01Y.cpy` – Account record (reads/updates balance)
-- `CVTRA05Y.cpy` – Transaction record (creates payment transaction)
+- `COBIL00C` – Bill payment CICS program (CB00 transaction); 572-line COBOL program handling validation, balance display, confirmation, transaction creation, and account update
+- `COBIL00.bms` – BMS 3270 mapset for bill payment screen (COBIL0A, 24×80)
+- `COBIL00.CPY` – Generated BMS copybook defining COBIL0AI/COBIL0AO screen I/O structures
+- `CVACT01Y.cpy` – Account record layout (ACCTDAT VSAM KSDS, 300 bytes); reads ACCT-CURR-BAL, rewrites after decrement
+- `CVACT03Y.cpy` – Card cross-reference layout (CARDXREF VSAM, 50 bytes); accessed via CXACAIX alternate index to retrieve card number
+- `CVTRA05Y.cpy` – Transaction record layout (TRANSACT VSAM KSDS, 350 bytes); browsed for max ID, new payment record written
+- `COCOM01Y.cpy` – CARDDEMO-COMMAREA (shared CICS state management across all online programs)
 
 **CICS Transactions:**
 | Transaction | Program  | Function |
 |:-----------|:---------|:---------|
-| CB00       | COBIL00C | Submit bill payment |
+| CB00       | COBIL00C | Display current balance, confirm, and submit full bill payment |
+
+**VSAM Files Accessed:**
+| CICS DD Name | Dataset | Access Mode | Purpose |
+|:-----------|:---------|:---------|:---------|
+| ACCTDAT | AWS.M2.CARDDEMO.ACCTDATA.PS | READ UPDATE + REWRITE | Account balance lookup and update |
+| CXACAIX | CARDXREF alternate index | READ | Retrieve card number by account ID |
+| TRANSACT | AWS.M2.CARDDEMO.TRANSACT.VSAM.KSDS | STARTBR/READPREV/ENDBR + WRITE | Max ID lookup and payment record insert |
+
+**Transaction Record Written (payment):**
+```cobol
+TRAN-TYPE-CD     = '02'               -- Payment type code
+TRAN-CAT-CD      = 2
+TRAN-SOURCE      = 'POS TERM'
+TRAN-DESC        = 'BILL PAYMENT - ONLINE'
+TRAN-AMT         = ACCT-CURR-BAL      -- Full balance at time of payment
+TRAN-CARD-NUM    = XREF-CARD-NUM      -- From CXACAIX lookup
+TRAN-MERCHANT-ID = 999999999          -- Internal sentinel
+```
 
 **Business Rules:**
-- Payment amount must be positive
-- Payment creates a credit transaction record in the transaction VSAM file
-- Account current balance is reduced by payment amount
-- Cycle credit balance is updated
+- Payment amount equals the full outstanding balance (`ACCT-CURR-BAL`) — partial payments are not supported
+- Account ID is required and must exist in ACCTDAT; error displayed if not found
+- Balance must be greater than zero; "You have nothing to pay" message shown otherwise
+- Explicit Y/N confirmation is required before payment is processed
+- Transaction ID is generated as `max(existing TRAN-ID) + 1` via STARTBR/READPREV from HIGH-VALUES
+- Account balance is decremented atomically after successful transaction write: `ACCT-CURR-BAL = ACCT-CURR-BAL - TRAN-AMT`
+- On success, a confirmation message with the new Transaction ID is displayed in green on the ERRMSG field
+- PF3 returns to the calling program (typically COMEN01C); PF4 clears the screen
+
+**Screen Fields (COBIL0A map):**
+- `ACTIDIN` — 11-character account ID input (cursor default)
+- `CURBAL` — 14-character current balance display
+- `CONFIRM` — 1-character Y/N payment confirmation input
+- `ERRMSG` — 78-character error/success message area (row 23)
 
 **User Story Examples:**
 - As a **cardholder**, I want to make a bill payment so my balance is reduced and account remains in good standing.
-- As a **cardholder**, I want to see my current balance before paying so I can choose a payment amount.
-- As a **cardholder**, I want a confirmation after payment so I know it was processed successfully.
+- As a **cardholder**, I want to see my current balance before paying so I can verify the amount before confirming.
+- As a **cardholder**, I want a confirmation prompt so I don't accidentally submit a payment.
+- As a **cardholder**, I want a transaction ID after successful payment so I have a reference for the payment record.
 
 ---
 
@@ -709,10 +741,15 @@ Key: `SEC-USR-ID` (8 chars)
 - AIX (Alternate Index) on TRANSACT allows lookup by card number
 
 ### Bill Payment — Rules
-- Payment amount must be greater than zero
-- Payment creates a debit transaction in the TRANSACT VSAM file
-- Account `ACCT-CURR-BAL` decremented by payment amount
-- `ACCT-CURR-CYC-CREDIT` incremented
+- Payment always covers the **full outstanding balance** (`ACCT-CURR-BAL`) — partial payments are not supported
+- Account ID must be non-blank and must exist in ACCTDAT; "Account ID NOT found" error shown otherwise
+- `ACCT-CURR-BAL` must be greater than zero; "You have nothing to pay" shown if zero or negative
+- Explicit Y/N confirmation required before payment executes; N clears the screen with no payment processed
+- Transaction type code is hardcoded `'02'`; category code `2`; source `'POS TERM'`; description `'BILL PAYMENT - ONLINE'`
+- Transaction ID generated as `max(TRAN-ID) + 1` via STARTBR/READPREV from HIGH-VALUES on TRANSACT file
+- Card number (`TRAN-CARD-NUM`) retrieved from CXACAIX alternate index (keyed by account ID) before writing transaction
+- Account `ACCT-CURR-BAL` decremented by full payment amount after successful transaction write
+- On success, the new Transaction ID is displayed in the success message in green
 
 ### Reports — Rules
 - Report generation is triggered online (CR00) and executed as a batch job via internal reader
