@@ -118,39 +118,90 @@
 
 ### 3. Credit Cards
 **ID:** `credit-cards`  
-**Purpose:** Enables listing, viewing, and updating credit card details associated with an account. Supports multiple cards per account via VSAM cross-reference.  
+**Purpose:** Enables listing, viewing, and updating credit card details associated with an account. Supports multiple cards per account via VSAM cross-reference. Admin users can browse all cards system-wide; regular users see only cards linked to their account context.
+
 **Key Components:**
-- `COCRDLIC` – Credit card list CICS program (CCLI transaction)
-- `COCRDSLC` – Credit card view/select CICS program (CCDL transaction)
-- `COCRDUPC` – Credit card update CICS program (CCUP transaction)
-- `CVACT02Y.cpy` – Card record layout (150-byte)
-- `CVACT03Y.cpy` – Card cross-reference layout (account-to-card mapping)
-- `COCRDLI.bms` / `COCRDSL.bms` / `COCRDUP.bms` – BMS screen maps
-- CARDDATA VSAM (`AWS.M2.CARDDEMO.CARDDATA.PS`)
-- CARDXREF VSAM (`AWS.M2.CARDDEMO.CARDXREF.PS`)
+- `COCRDLIC` – Credit card list CICS program (CCLI transaction) — paginated browse (7/page), forward/backward paging via CICS STARTBR/READNEXT/READPREV, row selection for view (S) or update (U), account/card filter support (~1,459 lines)
+- `COCRDSLC` – Credit card detail view CICS program (CCDL transaction) — reads single card by card number, displays all fields read-only, routes to update screen via PF5 (~887 lines)
+- `COCRDUPC` – Credit card update CICS program (CCUP transaction) — two-step validate-then-confirm update flow, optimistic concurrency control (snapshot comparison before REWRITE), validates name (alpha only), status (Y/N), expiry date range (~1,560 lines)
+- `CVACT02Y.cpy` – Card record layout (RECLN=150, key: CARD-NUM 16 chars)
+- `CVACT03Y.cpy` – Card cross-reference layout (RECLN=50, key: XREF-CARD-NUM, maps card → customer + account)
+- `CVCRD01Y.cpy` – Credit card work area (AID key mapping, next program/map navigation, error/return messages, CC-ACCT-ID, CC-CARD-NUM, CC-CUST-ID)
+- `COCRDLI.bms` / `COCRDSL.bms` / `COCRDUP.bms` – BMS 3270 screen maps
+- `COCRDLI.CPY` / `COCRDSL.CPY` / `COCRDUP.CPY` – Generated BMS copybooks (in `cpy-bms/`)
+- CARDDATA VSAM (`AWS.M2.CARDDEMO.CARDDATA.PS`) — 150-byte KSDS, primary key CARD-NUM
+- CARDXREF VSAM (`AWS.M2.CARDDEMO.CARDXREF.PS`) — 50-byte KSDS, primary key XREF-CARD-NUM
+
+**JCL Jobs:**
+| Job      | File              | Function |
+|:--------|:-----------------|:---------|
+| CARDFILE | `jcl/CARDFILE.jcl` | Define and load CARDDATA VSAM with sample card records |
+| XREFFILE | `jcl/XREFFILE.jcl` | Define and load CARDXREF VSAM with cross-reference records |
+| READCARD | `jcl/READCARD.jcl` | Diagnostic: read and print CARDDATA records |
+| READXREF | `jcl/READXREF.jcl` | Diagnostic: read and print CARDXREF records |
 
 **CICS Transactions:**
-| Transaction | Program   | Function |
-|:-----------|:---------|:---------|
-| CCLI       | COCRDLIC | List credit cards for an account |
-| CCDL       | COCRDSLC | View credit card details |
-| CCUP       | COCRDUPC | Update credit card information |
+| Transaction | Program   | Mapset   | Function |
+|:-----------|:---------|:--------|:---------|
+| CCLI       | COCRDLIC | COCRDLI | List credit cards (paginated, 7/page), filter by account/card |
+| CCDL       | COCRDSLC | COCRDSL | View credit card details (all fields, read-only) |
+| CCUP       | COCRDUPC | COCRDUP | Update credit card: name, expiry date, active status |
 
 **Card Data Model (`CVACT02Y`):**
 ```cobol
 01  CARD-RECORD.
-    05  CARD-NUM              PIC X(16).    -- 16-digit card number
-    05  CARD-ACCT-ID          PIC 9(11).    -- Linked account ID
-    05  CARD-CVV-CD           PIC 9(03).    -- CVV code
-    05  CARD-EMBOSSED-NAME    PIC X(50).    -- Cardholder name on card
-    05  CARD-EXPIRAION-DATE   PIC X(10).    -- Expiration date
-    05  CARD-ACTIVE-STATUS    PIC X(01).    -- Status (A=Active, I=Inactive)
+    05  CARD-NUM              PIC X(16).    -- 16-digit card number (VSAM primary key)
+    05  CARD-ACCT-ID          PIC 9(11).    -- Linked account ID (FK to ACCTDATA)
+    05  CARD-CVV-CD           PIC 9(03).    -- CVV security code (stored plain text)
+    05  CARD-EMBOSSED-NAME    PIC X(50).    -- Cardholder name on card (alpha only)
+    05  CARD-EXPIRAION-DATE   PIC X(10).    -- Expiration date YYYY-MM-DD
+    05  CARD-ACTIVE-STATUS    PIC X(01).    -- Y=Active, N=Inactive
+    05  FILLER                PIC X(59).    -- Padding to 150 bytes
 ```
 
+**Card Cross-Reference Data Model (`CVACT03Y`):**
+```cobol
+01  CARD-XREF-RECORD.
+    05  XREF-CARD-NUM         PIC X(16).    -- Card number (primary key)
+    05  XREF-CUST-ID          PIC 9(09).    -- Associated customer ID
+    05  XREF-ACCT-ID          PIC 9(11).    -- Associated account ID
+    05  FILLER                PIC X(14).    -- Padding to 50 bytes
+```
+
+**Business Rules:**
+- Admin users (`CDEMO-USRTYP-ADMIN`) browse all cards; regular users see only their account's cards
+- Card number (16 chars) is the VSAM primary key; it cannot be changed online
+- Account ID is read-only on update screen — cannot be reassigned via the UI
+- Embossed name must be alphabetic characters and spaces only; auto-converted to uppercase on save
+- Active status accepts `Y` (active) or `N` (inactive) only on the update screen
+- Expiry month: 01–12; expiry year: 1950–2099
+- Update uses optimistic concurrency: snapshot taken at read; compared before REWRITE; if changed by another user, update is rejected and screen refreshed
+- CVV code is preserved as-is during updates (not editable, not re-validated)
+- No online card creation — new cards added via JCL batch only
+
+**PF Key Navigation:**
+- CCLI: ENTER=refresh/select, PF3=main menu, PF7=page up, PF8=page down; row selector S=view, U=update
+- CCDL: ENTER=query, PF3=card list, PF5=update screen
+- CCUP: ENTER×1=validate, ENTER×2=confirm+save, PF3=cancel to card list, PF5=detail view
+
+**Dependencies:**
+- `accounts` module: COMMAREA account context (`CC-ACCT-ID`) set by account navigation; CARDDATA → ACCTDATA FK
+- `authentication` module: `CDEMO-USRTYP-ADMIN` flag controls admin vs. user browse scope
+- `transactions` module: `TRAN-CARD-NUM` in TRANSACT VSAM must match a valid `CARD-NUM`
+- `authorization` module (optional): uses CARDXREF to resolve card → account/customer during MQ authorization
+
 **User Story Examples:**
-- As a **cardholder**, I want to list all cards linked to my account so I can manage each card.
-- As a **cardholder**, I want to view card details including expiration date so I know when my card expires.
-- As a **cardholder**, I want to activate or deactivate a card so I can control card usage.
+- As a **cardholder**, I want to list all cards linked to my account so I can see which are active and manage each card.
+- As a **cardholder**, I want to view card details including expiration date and status so I know when my card expires.
+- As a **cardholder**, I want to update my card's embossed name or activate/deactivate a card so I can control card usage.
+- As an **administrator**, I want to browse all cards system-wide so I can perform system-level card management.
+- As a **batch operator**, I want CARDDATA and CARDXREF VSAM files initialized so the online credit-card module functions correctly.
+
+**Readiness Notes:**
+- **CVV Storage (PCI-DSS):** `CARD-CVV-CD` stored in plain text in CARDDATA — must be removed or tokenized in production
+- **No card number masking:** Full 16-digit card number displayed on 3270 screens — mask in modernized UI
+- **No ACCT-ID Alternate Index:** Account filtering requires full VSAM browse with in-memory filter — potential performance risk for large datasets
+- **Field name typo:** `CARD-EXPIRAION-DATE` (missing T) is intentional in existing code — do not correct without coordinated update of all copybook references
 
 ---
 
@@ -695,11 +746,19 @@ Key: `SEC-USR-ID` (8 chars)
 - Account balance updated atomically during batch posting
 
 ### Credit Cards — Rules
-- Card number is 16 characters; linked to exactly one account via CARDXREF
-- Multiple cards can be linked to a single account
-- Card status `A`=Active enables transactions; `I`=Inactive prevents new charges
+- Card number is 16 characters (VSAM primary key); linked to exactly one account via CARDXREF
+- Multiple cards can be linked to a single account (1:M relationship)
+- Card active status uses `Y`=Active / `N`=Inactive on the CCUP update screen (note: `A`/`I` values appear in the data model description but `Y`/`N` is what COCRDUPC validates and stores)
+- Card status `Y`=Active enables transaction authorization; `N`=Inactive prevents new charges
+- Expiration date stored as `YYYY-MM-DD` string; month must be 01–12, year 1950–2099
 - Expiration date must be checked during authorization processing
-- CVV is stored but not encrypted in the base application (modernization consideration)
+- CVV is stored in plain text — not encrypted in the base application (PCI-DSS modernization consideration)
+- Embossed name accepts only alphabetic characters and spaces; auto-converted to uppercase before storage
+- Card updates require two ENTER confirmations: first to validate, second to confirm the write
+- Optimistic concurrency: record snapshot compared before REWRITE; concurrent modifications are detected and rejected
+- No online card creation; new cards must be batch-loaded via JCL (CARDFILE.jcl)
+- Admin users (`CDEMO-USRTYP-ADMIN`) can browse all cards; regular users see only their account's cards
+- No Alternate Index on `CARD-ACCT-ID` — account filtering requires full VSAM browse with in-memory filter
 
 ### Transactions — Rules
 - Transaction ID is 16-character unique key in TRANSACT VSAM
