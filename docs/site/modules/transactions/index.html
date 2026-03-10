@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - CardDemo User Story Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #1b6ca8 0%, #155e8a 100%); color: white; padding: 35px 20px; }
+        .header h1 { font-size: 2em; margin-bottom: 8px; } .header p { opacity: 0.8; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.7; margin-bottom: 10px; }
+        .breadcrumb a { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .card h2 { font-size: 1.3em; color: #1a1a2e; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #1b6ca8; }
+        .card h3 { font-size: 1em; color: #1b6ca8; margin: 15px 0 8px; }
+        ul { padding-left: 20px; } li { margin-bottom: 6px; line-height: 1.5; font-size: 0.9em; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.82em; line-height: 1.6; margin: 10px 0; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+        .badge-low { background: #d4edda; color: #155724; } .badge-med { background: #fff3cd; color: #856404; } .badge-high { background: #f8d7da; color: #721c24; }
+        .complexity { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .us-template { background: #e3f2fd; border-left: 4px solid #1b6ca8; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9em; }
+        .ac-item { background: #f8f9ff; padding: 10px 12px; border-radius: 6px; margin: 6px 0; font-size: 0.85em; }
+        .ac-item strong { color: #1b6ca8; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #1b6ca8; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        tr:hover td { background: #f8f9ff; }
+        footer { text-align: center; padding: 25px; color: #888; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="breadcrumb"><a href="../../index.html">← CardDemo</a> / Transactions</div>
+            <h1>💰 Transactions</h1>
+            <p>Transaction List, View, Add &amp; Batch Posting</p>
+        </div>
+    </div>
+    <div class="container">
+
+        <div class="card">
+            <p><strong>Module ID:</strong> <code>transactions</code></p>            <h2>
+            <p style="margin-top:8px;"><strong>Purpose:</strong> Core financial transaction management. Online functions allow users to list, view, and add transactions. Batch programs post daily transactions (CBTRN02C), generate reports (CBTRN03C), and combine transaction files (SORT).</p>
+            <p style="margin-top:8px;"><strong>Business Context:</strong> Every financial activity (purchases, payments, fees) is recorded as a transaction. Transactions link to accounts via card number through XREFFILE. Transaction type code + category code classify each transaction for interest calculation and reporting.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🎯 User Story Templates</h2>
+                <div class="us-template">As a <strong>regular user</strong>, I want to view my transaction history so that I can track and verify my spending.</div>
+                <div class="us-template">As a <strong>regular user</strong>, I want to view the details of a specific transaction so that I have full information about a charge.</div>
+                <div class="us-template">As a <strong>regular user</strong>, I want to add a new transaction so that I can record a purchase manually.</div>
+                <div class="us-template">As a <strong>batch system</strong>, I want to post daily transactions from DALYTRAN to TRANFILE so that account balances are updated nightly.</div>
+                <div class="us-template">As a <strong>batch system</strong>, I want to reject invalid transactions to DALYREJS with a reason code so that bad records are tracked separately.</div>
+            </div>
+            <div class="card">
+                <h2>📊 Story Complexity</h2>
+                <div class="complexity">
+                    <span class="badge badge-low">Simple 1-2 pts</span>
+                    <span class="badge badge-med">Medium 3-5 pts</span>
+                    <span class="badge badge-high">Complex 5-8 pts</span>
+                </div>
+                <h3>Simple (1-2 pts)</h3>
+                <ul>
+                    <li>Display transaction list (CT00)</li>
+                    <li>View single transaction detail (CT01)</li>
+                    <li>Navigate pages with PF7/PF8</li>
+                </ul>
+                <h3>Medium (3-5 pts)</h3>
+                <ul>
+                    <li>Add new transaction with type/category (CT02)</li>
+                    <li>Validate card number via XREFFILE lookup</li>
+                    <li>CBTRN03C: generate transaction report</li>
+                </ul>
+                <h3>Complex (5-8 pts)</h3>
+                <ul>
+                    <li>POSTTRAN (CBTRN02C): full daily transaction posting with balance update</li>
+                    <li>COMBTRAN: SORT-based file merge with complex control cards</li>
+                    <li>Transaction reversal / correction workflow</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <div class="ac-item"><strong>Transaction List (CT00):</strong> Given CARD-NUM in COMMAREA, when screen loads, then transactions are listed in reverse chronological order showing: ID, date, amount, merchant name, type code.</div>
+            <div class="ac-item"><strong>Transaction View (CT01):</strong> Given user selects transaction, when CT01 loads, then all fields are displayed: ID, type, category, source, description, amount, card number, merchant details, timestamps.</div>
+            <div class="ac-item"><strong>Transaction Add (CT02):</strong> Given user fills required fields and presses ENTER, then new TRAN-ID is generated, record written to TRANFILE, and success message displayed.</div>
+            <div class="ac-item"><strong>Card Validation:</strong> Given card number entered in CT02, when ENTER pressed, then XREFFILE is read to validate card exists; if not found, error message displayed.</div>
+            <div class="ac-item"><strong>POSTTRAN Reject:</strong> Given transaction with invalid account or card, then record is written to DALYREJS with reason code and processing continues with next record.</div>
+            <div class="ac-item"><strong>Balance Update:</strong> Given valid transaction in POSTTRAN, then ACCT-CURR-BAL is updated and TRAN-CAT-BAL-RECORD is updated for interest calculation.</div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <table>
+                <tr><th>Component</th><th>Type</th><th>Function</th></tr>
+                <tr><td><code>COTRN00C.cbl</code></td><td>CICS CT00</td><td>Transaction list — browse TRANFILE via XREF ACCT-ID AIX</td></tr>
+                <tr><td><code>COTRN01C.cbl</code></td><td>CICS CT01</td><td>Transaction view — read TRANFILE by TRAN-ID</td></tr>
+                <tr><td><code>COTRN02C.cbl</code></td><td>CICS CT02</td><td>Transaction add — validate via XREF, write TRANFILE</td></tr>
+                <tr><td><code>CBTRN01C.cbl</code></td><td>Batch</td><td>Transaction file utility</td></tr>
+                <tr><td><code>CBTRN02C.cbl</code></td><td>Batch POSTTRAN</td><td>Post DALYTRAN → TRANFILE, update ACCTFILE + TCATBALF, rejects to DALYREJS</td></tr>
+                <tr><td><code>CBTRN03C.cbl</code></td><td>Batch TRANREPT</td><td>Transaction report generation — submitted from CORPT00C</td></tr>
+                <tr><td>TRANFILE VSAM</td><td>VSAM KSDS+AIX</td><td>Transaction master — key=TRAN-ID (16 chars), AIX on CARD-NUM</td></tr>
+                <tr><td>XREFFILE VSAM</td><td>VSAM KSDS+AIX</td><td>Card-Account cross-ref — key=CARD-NUM, AIX=ACCT-ID</td></tr>
+            </table>
+            <h3>Transaction Record (CVTRA series)</h3>
+            <pre>01  TRAN-RECORD.                           (RECLN ~350)
+    05  TRAN-ID               PIC X(16)   -- unique transaction ID (key)
+    05  TRAN-TYPE-CD          PIC X(02)   -- transaction type (e.g. 'PU', 'PY')
+    05  TRAN-CAT-CD           PIC 9(04)   -- category code
+    05  TRAN-SOURCE           PIC X(10)   -- origination source
+    05  TRAN-DESC             PIC X(100)  -- description
+    05  TRAN-AMT              PIC S9(10)V99
+    05  TRAN-CARD-NUM         PIC X(16)   -- links to CARD-RECORD
+    05  TRAN-MERCHANT-ID      PIC 9(15)
+    05  TRAN-MERCHANT-NAME    PIC X(50)
+    05  TRAN-MERCHANT-CITY    PIC X(50)
+    05  TRAN-MERCHANT-ZIP     PIC X(10)
+    05  TRAN-ORIG-TS          PIC X(26)   -- origination timestamp
+    05  TRAN-PROC-TS          PIC X(26)   -- processing timestamp</pre>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🔗 Dependencies</h2>
+                <ul>
+                    <li><strong>credit-cards:</strong> CARD-NUM from CARDFILE used as transaction key</li>
+                    <li><strong>accounts:</strong> ACCT-CURR-BAL updated during POSTTRAN</li>
+                    <li><strong>XREFFILE:</strong> Links card number to account ID</li>
+                    <li><strong>TCATBALF:</strong> Category balances updated for interest calculation</li>
+                    <li><strong>reports:</strong> CBTRN03C produces report output</li>
+                    <li><strong>transaction-type-db2 (optional):</strong> TRAN-TYPE-CD validated against DB2 table</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h2>⚡ Development Acceleration</h2>
+                <ul>
+                    <li><strong>XREFFILE AIX:</strong> Alternate index on ACCT-ID enables account-to-transaction lookups</li>
+                    <li><strong>CBTRN02C pattern:</strong> Sequential file + random VSAM update — template for any batch posting job</li>
+                    <li><strong>TRAN-ID generation:</strong> Established pattern in CT02 — reuse for any new transaction type</li>
+                    <li><strong>CVTRA01Y-07Y copybooks:</strong> Full set of transaction data structures ready to reuse</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+    <footer><p><a href="../../index.html">← Back to CardDemo Portal</a> · Last updated: March 2025</p></footer>
+</body>
+</html>

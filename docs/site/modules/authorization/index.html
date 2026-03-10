@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization - CardDemo User Story Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #c0392b 0%, #922b21 100%); color: white; padding: 35px 20px; }
+        .header h1 { font-size: 2em; margin-bottom: 8px; } .header p { opacity: 0.8; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.7; margin-bottom: 10px; }
+        .breadcrumb a { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .optional-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin-left: 10px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .card h2 { font-size: 1.3em; color: #1a1a2e; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #c0392b; }
+        .card h3 { font-size: 1em; color: #c0392b; margin: 15px 0 8px; }
+        ul { padding-left: 20px; } li { margin-bottom: 6px; line-height: 1.5; font-size: 0.9em; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.82em; line-height: 1.6; margin: 10px 0; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+        .badge-low { background: #d4edda; color: #155724; } .badge-med { background: #fff3cd; color: #856404; } .badge-high { background: #f8d7da; color: #721c24; }
+        .complexity { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .us-template { background: #fdecea; border-left: 4px solid #c0392b; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9em; }
+        .ac-item { background: #f8f9ff; padding: 10px 12px; border-radius: 6px; margin: 6px 0; font-size: 0.85em; }
+        .ac-item strong { color: #c0392b; }
+        .info { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #c0392b; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        footer { text-align: center; padding: 25px; color: #888; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="breadcrumb"><a href="../../index.html">← CardDemo</a> / Authorization</div>
+            <h1>🛡️ Authorization <span class="optional-badge">Optional Module</span></h1>
+            <p>Real-Time Credit Card Authorization — MQ + IMS DB + DB2</p>
+        </div>
+    </div>
+    <div class="container">
+
+        <div class="card">
+            <h2>📋 Overview</h2>
+            <p><strong>Module ID:</strong> <code>authorization</code></p>
+            <p style="margin-top:8px;"><strong>Purpose:</strong> Optional extension that adds real-time credit card authorization processing via IBM MQ. Authorization requests arrive via MQ, are processed by COPAUA0C, decisions stored in IMS DB, fraud analytics logged to DB2. Users can view pending authorizations (CPVS/CPVD).</p>
+            <div class="info">ℹ️ <strong>Installation required:</strong> This module requires IMS DB setup, DB2 CARDAUTHDB, and MQ configuration. See <code>app/app-authorization-ims-db2-mq/README.md</code> for setup instructions.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🎯 User Story Templates</h2>
+                <div class="us-template">As a <strong>merchant POS system</strong>, I want to send authorization requests via MQ so that card transactions can be approved in real-time.</div>
+                <div class="us-template">As a <strong>regular user</strong>, I want to view pending authorizations on my account (CPVS) so that I can see pre-authorized charges.</div>
+                <div class="us-template">As a <strong>regular user</strong>, I want to view the details of a specific authorization (CPVD) so that I have full information about a pending charge.</div>
+                <div class="us-template">As a <strong>fraud analyst</strong>, I want declined authorizations logged to DB2 so that fraud patterns can be identified and analyzed.</div>
+                <div class="us-template">As a <strong>batch system</strong>, I want expired authorizations purged (CBPAUP0J) so that old pending records don't accumulate.</div>
+            </div>
+            <div class="card">
+                <h2>📊 Story Complexity</h2>
+                <div class="complexity">
+                    <span class="badge badge-low">Simple 1-2 pts</span>
+                    <span class="badge badge-med">Medium 3-5 pts</span>
+                    <span class="badge badge-high">Complex 5-8 pts</span>
+                </div>
+                <h3>Simple (1-2 pts)</h3>
+                <ul>
+                    <li>Display pending authorization summary list (CPVS)</li>
+                    <li>Navigate authorization list pages</li>
+                </ul>
+                <h3>Medium (3-5 pts)</h3>
+                <ul>
+                    <li>View authorization details (CPVD) — read IMS + update DB2</li>
+                    <li>CBPAUP0J: batch purge of expired authorizations</li>
+                </ul>
+                <h3>Complex (5-8 pts)</h3>
+                <ul>
+                    <li>CP00 (COPAUA0C): full MQ request processing — read VSAM, apply rules, write IMS, reply via MQ</li>
+                    <li>Two-phase commit across IMS DB and DB2</li>
+                    <li>Fraud detection rules implementation</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <div class="ac-item"><strong>MQ Processing (CP00):</strong> Given authorization request message on MQ input queue, when COPAUA0C is triggered, then: account validated via VSAM XREF, business rules applied (credit limit, card status), approval/decline decision stored in IMS DB, response sent to MQ reply queue.</div>
+            <div class="ac-item"><strong>Pending Auth List (CPVS):</strong> Given ACCT-ID in COMMAREA, when CPVS loads, then all pending authorizations for account are listed from IMS DB showing: merchant, amount, date, status.</div>
+            <div class="ac-item"><strong>Authorization Detail (CPVD):</strong> Given user selects authorization, when CPVD loads, then full authorization details are shown; viewing updates IMS DB status and inserts audit record to DB2.</div>
+            <div class="ac-item"><strong>Auth Expiry Purge (CBPAUP0J):</strong> Given expired authorization records in IMS DB, when CBPAUP0C runs, then records past expiry date are deleted from IMS DB.</div>
+            <div class="ac-item"><strong>Decline Logging:</strong> Given authorization is declined (insufficient credit, inactive card), then decline reason is logged to DB2 for fraud analytics.</div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <table>
+                <tr><th>Component</th><th>Transaction</th><th>Function</th></tr>
+                <tr><td><code>COPAUA0C.cbl</code></td><td>CP00 (MQ trigger)</td><td>Process MQ auth request — VSAM lookup, rules, IMS write, MQ reply</td></tr>
+                <tr><td><code>COPAUS0C.cbl</code></td><td>CPVS</td><td>Pending auth summary — read IMS DB, display list</td></tr>
+                <tr><td><code>COPAUS1C.cbl</code></td><td>CPVD</td><td>Auth detail — read/update IMS, insert DB2 audit record</td></tr>
+                <tr><td><code>COPAUS2C.cbl</code></td><td>—</td><td>Authorization sub-program</td></tr>
+                <tr><td><code>CBPAUP0C.cbl</code></td><td>CBPAUP0J</td><td>Batch: purge expired authorizations from IMS DB</td></tr>
+                <tr><td>IMS DB CARDAUTHDB</td><td>—</td><td>Hierarchical DB for authorization records storage</td></tr>
+                <tr><td>DB2 tables</td><td>—</td><td>Fraud analytics, authorization audit log</td></tr>
+                <tr><td>MQ queues</td><td>—</td><td>Request queue (inbound), Reply queue (outbound)</td></tr>
+            </table>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🔗 Dependencies</h2>
+                <ul>
+                    <li><strong>accounts:</strong> ACCTFILE/XREFFILE used for account validation</li>
+                    <li><strong>credit-cards:</strong> CARDFILE checked for card active status</li>
+                    <li><strong>IMS DB:</strong> Must be configured with CARDAUTHDB database</li>
+                    <li><strong>DB2:</strong> Must have fraud analytics tables provisioned</li>
+                    <li><strong>MQ:</strong> Queue manager and request/reply queues must exist</li>
+                    <li><strong>VSAM XREFFILE:</strong> Card-to-account cross-reference for auth lookup</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h2>⚡ Development Acceleration</h2>
+                <ul>
+                    <li><strong>MQ request/response pattern:</strong> COPAUA0C establishes the full pattern — reuse for any MQ integration</li>
+                    <li><strong>IMS DL/I calls:</strong> Standard GU/GHU/ISRT/DLET pattern demonstrated</li>
+                    <li><strong>Two-phase commit:</strong> IMS+DB2 sync demonstrated in CPVD (COPAUS1C)</li>
+                    <li><strong>MQ trigger processing:</strong> CICS MQ-triggered program pattern established</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+    <footer><p><a href="../../index.html">← Back to CardDemo Portal</a> · Last updated: March 2025</p></footer>
+</body>
+</html>

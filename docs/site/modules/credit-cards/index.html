@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Cards - CardDemo User Story Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #533483 0%, #6a4c93 100%); color: white; padding: 35px 20px; }
+        .header h1 { font-size: 2em; margin-bottom: 8px; } .header p { opacity: 0.8; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.7; margin-bottom: 10px; }
+        .breadcrumb a { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .card h2 { font-size: 1.3em; color: #1a1a2e; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #533483; }
+        .card h3 { font-size: 1em; color: #533483; margin: 15px 0 8px; }
+        ul { padding-left: 20px; } li { margin-bottom: 6px; line-height: 1.5; font-size: 0.9em; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.82em; line-height: 1.6; margin: 10px 0; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+        .badge-low { background: #d4edda; color: #155724; } .badge-med { background: #fff3cd; color: #856404; } .badge-high { background: #f8d7da; color: #721c24; }
+        .complexity { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .us-template { background: #f3e8ff; border-left: 4px solid #533483; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9em; }
+        .ac-item { background: #f8f9ff; padding: 10px 12px; border-radius: 6px; margin: 6px 0; font-size: 0.85em; }
+        .ac-item strong { color: #533483; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #533483; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        tr:hover td { background: #f8f9ff; }
+        footer { text-align: center; padding: 25px; color: #888; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="breadcrumb"><a href="../../index.html">← CardDemo</a> / Credit Cards</div>
+            <h1>💳 Credit Cards</h1>
+            <p>Card List, View &amp; Update — CARDFILE VSAM Management</p>
+        </div>
+    </div>
+    <div class="container">
+
+        <div class="card">
+            <h2>📋 Overview</h2>
+            <p><strong>Module ID:</strong> <code>credit-cards</code></p>
+            <p style="margin-top:8px;"><strong>Purpose:</strong> Manages credit card records in CARDFILE VSAM. Provides list view of all cards for an account, detailed card view, and card update functionality. Cards link to accounts via CARD-ACCT-ID and to the XREFFILE cross-reference.</p>
+            <p style="margin-top:8px;"><strong>Business Context:</strong> A customer may have multiple cards linked to one account. Card status (active/inactive) controls whether a card can be used for transactions. Card number is the key linking mechanism between transactions and accounts.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🎯 User Story Templates</h2>
+                <div class="us-template">As a <strong>regular user</strong>, I want to see all credit cards associated with my account so that I can identify which cards are active.</div>
+                <div class="us-template">As a <strong>regular user</strong>, I want to view the details of a specific card (expiry date, embossed name) so that I have my card information.</div>
+                <div class="us-template">As a <strong>regular user</strong>, I want to deactivate a lost/stolen card so that unauthorized use is prevented.</div>
+                <div class="us-template">As an <strong>admin</strong>, I want to view card records for any account so that I can assist customers with card issues.</div>
+            </div>
+            <div class="card">
+                <h2>📊 Story Complexity</h2>
+                <div class="complexity">
+                    <span class="badge badge-low">Simple 1-2 pts</span>
+                    <span class="badge badge-med">Medium 3-5 pts</span>
+                    <span class="badge badge-high">Complex 5-8 pts</span>
+                </div>
+                <h3>Simple (1-2 pts)</h3>
+                <ul>
+                    <li>Display card list screen (CCLI/COCRDLIC)</li>
+                    <li>Browse CARDFILE with STARTBR/READNEXT</li>
+                    <li>Navigate card list pages (PF7/PF8)</li>
+                </ul>
+                <h3>Medium (3-5 pts)</h3>
+                <ul>
+                    <li>View individual card details (CCDL)</li>
+                    <li>Update card active status (CCUP)</li>
+                    <li>Update card embossed name or expiry date</li>
+                </ul>
+                <h3>Complex (5-8 pts)</h3>
+                <ul>
+                    <li>Add new card to account with XREFFILE update</li>
+                    <li>Card reissue workflow with new card number</li>
+                    <li>Bulk card status update via batch</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <div class="ac-item"><strong>Card List (CCLI):</strong> Given ACCT-ID in COMMAREA, when screen loads, then all cards with matching CARD-ACCT-ID are listed showing card number (masked), status, and expiry date.</div>
+            <div class="ac-item"><strong>Card View (CCDL):</strong> Given user selects a card from list, when CCDL loads, then full card details are shown: number, account ID, CVV (masked), embossed name, expiry, status.</div>
+            <div class="ac-item"><strong>Card Update (CCUP):</strong> Given user modifies CARD-ACTIVE-STATUS and presses ENTER, then CARDFILE is rewritten and success message is displayed.</div>
+            <div class="ac-item"><strong>No Cards Found:</strong> Given account has no cards in CARDFILE, then appropriate message is displayed and user can navigate back.</div>
+            <div class="ac-item"><strong>PF3 Navigation:</strong> PF3 from any card screen returns to card list (CCLI), PF3 from CCLI returns to main menu (CM00).</div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <table>
+                <tr><th>Component</th><th>Transaction</th><th>Function</th></tr>
+                <tr><td><code>COCRDLIC.cbl</code></td><td>CCLI</td><td>Card list — STARTBR/READNEXT on CARDFILE filtered by ACCT-ID</td></tr>
+                <tr><td><code>COCRDSLC.cbl</code></td><td>CCDL</td><td>Card detail view — READ CARDFILE by CARD-NUM</td></tr>
+                <tr><td><code>COCRDUPC.cbl</code></td><td>CCUP</td><td>Card update — READ UPDATE + REWRITE on CARDFILE</td></tr>
+                <tr><td>CARDFILE VSAM</td><td>—</td><td>Credit card master — key=CARD-NUM (16 chars), RECLN=150</td></tr>
+                <tr><td>XREFFILE VSAM</td><td>—</td><td>Card-Account-Customer cross-ref — key=CARD-NUM, AIX=ACCT-ID</td></tr>
+            </table>
+            <h3>Card Record Structure (CVACT02Y.cpy)</h3>
+            <pre>01  CARD-RECORD.                          (RECLN 150)
+    05  CARD-NUM               PIC X(16)  -- 16-digit card number (key)
+    05  CARD-ACCT-ID           PIC 9(11)  -- links to ACCOUNT-RECORD
+    05  CARD-CVV-CD            PIC 9(03)  -- security code
+    05  CARD-EMBOSSED-NAME     PIC X(50)  -- name on card
+    05  CARD-EXPIRAION-DATE    PIC X(10)  -- YYYY-MM-DD (typo preserved)
+    05  CARD-ACTIVE-STATUS     PIC X(01)  -- 'Y'=active, 'N'=inactive</pre>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🔗 Dependencies</h2>
+                <ul>
+                    <li><strong>accounts:</strong> CDEMO-ACCT-ID in COMMAREA used to filter card list</li>
+                    <li><strong>XREFFILE:</strong> Links CARD-NUM to ACCT-ID and CUST-ID</li>
+                    <li><strong>transactions:</strong> TRAN-CARD-NUM references CARD-NUM</li>
+                    <li><strong>authentication:</strong> Session must be established before accessing cards</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h2>⚡ Development Acceleration</h2>
+                <ul>
+                    <li><strong>STARTBR/READNEXT pattern:</strong> COCRDLIC.cbl — reuse for any browsing list screen</li>
+                    <li><strong>CVCRD01Y.cpy:</strong> Card data structure — reuse in any program touching CARDFILE</li>
+                    <li><strong>PF7/PF8 paging:</strong> Scroll pattern established in card list for similar list screens</li>
+                    <li><strong>XREFFILE AIX:</strong> Alternate index on ACCT-ID allows account-based card lookups</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+    <footer><p><a href="../../index.html">← Back to CardDemo Portal</a> · Last updated: March 2025</p></footer>
+</body>
+</html>
