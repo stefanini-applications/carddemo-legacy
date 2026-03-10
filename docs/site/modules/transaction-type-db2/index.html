@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Type DB2 - CardDemo User Story Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); color: white; padding: 35px 20px; }
+        .header h1 { font-size: 2em; margin-bottom: 8px; } .header p { opacity: 0.8; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.7; margin-bottom: 10px; }
+        .breadcrumb a { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .optional-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin-left: 10px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .card h2 { font-size: 1.3em; color: #1a1a2e; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #1565c0; }
+        .card h3 { font-size: 1em; color: #1565c0; margin: 15px 0 8px; }
+        ul { padding-left: 20px; } li { margin-bottom: 6px; line-height: 1.5; font-size: 0.9em; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.82em; line-height: 1.6; margin: 10px 0; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+        .badge-low { background: #d4edda; color: #155724; } .badge-med { background: #fff3cd; color: #856404; } .badge-high { background: #f8d7da; color: #721c24; }
+        .complexity { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .us-template { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9em; }
+        .ac-item { background: #f8f9ff; padding: 10px 12px; border-radius: 6px; margin: 6px 0; font-size: 0.85em; }
+        .ac-item strong { color: #1565c0; }
+        .info { background: #e3f2fd; border-left: 4px solid #1565c0; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #1565c0; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        footer { text-align: center; padding: 25px; color: #888; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="breadcrumb"><a href="../../index.html">← CardDemo</a> / Transaction Type DB2</div>
+            <h1>🗄️ Transaction Type DB2 <span class="optional-badge">Optional Module</span></h1>
+            <p>DB2 Transaction Type Reference Data Management — CTTU / CTLI</p>
+        </div>
+    </div>
+    <div class="container">
+
+        <div class="card">
+            <h2>📋 Overview</h2>
+            <p><strong>Module ID:</strong> <code>transaction-type-db2</code></p>
+            <p style="margin-top:8px;"><strong>Purpose:</strong> Optional extension that manages transaction type reference data in DB2 using embedded static SQL. Admin users can add, update, list, and delete transaction type codes via CICS transactions. Demonstrates DB2 integration patterns including cursors, CRUD operations, and SQLCA error handling.</p>
+            <div class="info">ℹ️ <strong>Installation required:</strong> Requires DB2 setup via CREADB21 job. See <code>app/app-transaction-type-db2/README.md</code>. After setup, TRANEXTR batch job syncs DB2 data to VSAM for use by base application.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🎯 User Story Templates</h2>
+                <div class="us-template">As an <strong>admin</strong>, I want to add a new transaction type code in DB2 so that new transaction categories are available in the system.</div>
+                <div class="us-template">As an <strong>admin</strong>, I want to list and update existing transaction types so that reference data stays accurate.</div>
+                <div class="us-template">As an <strong>admin</strong>, I want to delete obsolete transaction types from DB2 so that the reference table stays clean.</div>
+                <div class="us-template">As a <strong>batch system</strong>, I want TRANEXTR to extract DB2 transaction types to VSAM so that online programs can use the latest reference data.</div>
+            </div>
+            <div class="card">
+                <h2>📊 Story Complexity</h2>
+                <div class="complexity">
+                    <span class="badge badge-low">Simple 1-2 pts</span>
+                    <span class="badge badge-med">Medium 3-5 pts</span>
+                    <span class="badge badge-high">Complex 5-8 pts</span>
+                </div>
+                <h3>Simple (1-2 pts)</h3>
+                <ul>
+                    <li>List transaction types via DB2 cursor (CTLI)</li>
+                    <li>Forward/backward navigation through cursor</li>
+                </ul>
+                <h3>Medium (3-5 pts)</h3>
+                <ul>
+                    <li>Add/update transaction type (CTTU) with static SQL INSERT/UPDATE</li>
+                    <li>Delete transaction type with SQLCA error handling</li>
+                    <li>TRANEXTR batch: extract DB2 to VSAM</li>
+                </ul>
+                <h3>Complex (5-8 pts)</h3>
+                <ul>
+                    <li>CREADB21: full DB2 database setup with DDL</li>
+                    <li>MNTTRDB2 (COBTUPDT): batch maintenance with bulk updates</li>
+                    <li>Dynamic SQL for complex query patterns</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <div class="ac-item"><strong>List Types (CTLI):</strong> When CTLI loads, then all transaction types in DB2 are listed using forward cursor; PF7/PF8 navigates backward/forward through cursor results.</div>
+            <div class="ac-item"><strong>Add Type (CTTU):</strong> Given unique transaction type code, description, and category, when ENTER pressed, then SQL INSERT executes and SQLCA SQLCODE = 0 indicates success.</div>
+            <div class="ac-item"><strong>Duplicate Key:</strong> Given transaction type code already exists in DB2, then SQLCODE = -803 (duplicate key) is handled and user-friendly error message displayed.</div>
+            <div class="ac-item"><strong>Delete Type (CTLI):</strong> Given admin marks type for deletion, when confirmed, then SQL DELETE executes; if code is referenced by transactions, referential integrity error is shown.</div>
+            <div class="ac-item"><strong>TRANEXTR Sync:</strong> After DB2 update, when TRANEXTR batch runs, then VSAM TRANTYPE file is refreshed with current DB2 transaction type data.</div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <table>
+                <tr><th>Component</th><th>Transaction</th><th>Function</th></tr>
+                <tr><td><code>COTRTUPC.cbl</code></td><td>CTTU</td><td>Transaction type add/edit — static embedded SQL INSERT/UPDATE</td></tr>
+                <tr><td><code>COTRTLIC.cbl</code></td><td>CTLI</td><td>Transaction type list/update/delete — forward/backward DB2 cursor</td></tr>
+                <tr><td><code>COBTUPDT.cbl</code></td><td>MNTTRDB2</td><td>Batch maintenance — bulk transaction type updates in DB2</td></tr>
+                <tr><td>CREADB21 job</td><td>—</td><td>Creates CardDemo DB2 database and loads initial data</td></tr>
+                <tr><td>TRANEXTR job</td><td>—</td><td>Extracts DB2 transaction types to VSAM-compatible files</td></tr>
+                <tr><td>DB2 tables</td><td>—</td><td>Transaction type reference tables (see app/app-transaction-type-db2/ddl/)</td></tr>
+            </table>
+            <h3>DB2 Integration Patterns Demonstrated</h3>
+            <pre>-- Static embedded SQL with host variables
+EXEC SQL
+    INSERT INTO TRANTYPE (TRAN-TYPE-CD, TRAN-TYPE-DESC)
+    VALUES (:WS-TRAN-TYPE-CD, :WS-TRAN-TYPE-DESC)
+END-EXEC
+-- Check SQLCA
+IF SQLCODE = 0 THEN success ELSE handle error
+
+-- Forward cursor processing
+EXEC SQL DECLARE TYPE-CURSOR CURSOR FOR
+    SELECT * FROM TRANTYPE ORDER BY TRAN-TYPE-CD
+END-EXEC
+EXEC SQL OPEN TYPE-CURSOR END-EXEC
+EXEC SQL FETCH TYPE-CURSOR INTO :host-vars END-EXEC</pre>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🔗 Dependencies</h2>
+                <ul>
+                    <li><strong>DB2:</strong> Must be installed and CREADB21 job run first</li>
+                    <li><strong>DB2 precompiler:</strong> COBOL programs require DB2 precompile step in build</li>
+                    <li><strong>transactions:</strong> TRAN-TYPE-CD in TRANFILE references these codes</li>
+                    <li><strong>batch-processing:</strong> TRANEXTR syncs DB2 to VSAM TRANTYPE file</li>
+                    <li><strong>user-management (admin access):</strong> CA00 admin menu hosts CTTU/CTLI options</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h2>⚡ Development Acceleration</h2>
+                <ul>
+                    <li><strong>SQLCA pattern:</strong> Established in COTRTUPC/COTRTLIC — copy for any DB2 program</li>
+                    <li><strong>Cursor forward/backward:</strong> COTRTLIC shows both FETCH and FETCH PRIOR patterns</li>
+                    <li><strong>DB2 DCL files:</strong> DECLARE TABLE statements in app/app-transaction-type-db2/dcl/</li>
+                    <li><strong>DDL files:</strong> Table definitions in app/app-transaction-type-db2/ddl/ — ready to extend</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+    <footer><p><a href="../../index.html">← Back to CardDemo Portal</a> · Last updated: March 2025</p></footer>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQ Integration - CardDemo User Story Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%); color: white; padding: 35px 20px; }
+        .header h1 { font-size: 2em; margin-bottom: 8px; } .header p { opacity: 0.8; }
+        .breadcrumb { font-size: 0.85em; opacity: 0.7; margin-bottom: 10px; }
+        .breadcrumb a { color: rgba(255,255,255,0.8); text-decoration: none; }
+        .optional-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.8em; margin-left: 10px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .card h2 { font-size: 1.3em; color: #1a1a2e; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #6a1b9a; }
+        .card h3 { font-size: 1em; color: #6a1b9a; margin: 15px 0 8px; }
+        ul { padding-left: 20px; } li { margin-bottom: 6px; line-height: 1.5; font-size: 0.9em; }
+        code { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.82em; line-height: 1.6; margin: 10px 0; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+        .badge-low { background: #d4edda; color: #155724; } .badge-med { background: #fff3cd; color: #856404; } .badge-high { background: #f8d7da; color: #721c24; }
+        .complexity { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .us-template { background: #f3e5f5; border-left: 4px solid #6a1b9a; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 8px 0; font-size: 0.9em; }
+        .ac-item { background: #f8f9ff; padding: 10px 12px; border-radius: 6px; margin: 6px 0; font-size: 0.85em; }
+        .ac-item strong { color: #6a1b9a; }
+        .info { background: #f3e5f5; border-left: 4px solid #6a1b9a; padding: 12px 15px; border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th { background: #6a1b9a; color: white; padding: 10px; text-align: left; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        footer { text-align: center; padding: 25px; color: #888; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="breadcrumb"><a href="../../index.html">← CardDemo</a> / MQ Integration</div>
+            <h1>📨 MQ Integration <span class="optional-badge">Optional Module</span></h1>
+            <p>MQ-Based Account &amp; System Date Inquiry — CDRD / CDRA</p>
+        </div>
+    </div>
+    <div class="container">
+
+        <div class="card">
+            <h2>📋 Overview</h2>
+            <p><strong>Module ID:</strong> <code>mq-integration</code></p>
+            <p style="margin-top:8px;"><strong>Purpose:</strong> Optional extension demonstrating IBM MQ request/response messaging patterns. Provides two transactions: CDRD (system date inquiry) and CDRA (account details inquiry). External systems can query the mainframe without direct VSAM access.</p>
+            <div class="info">ℹ <strong>Installation required:</strong> Requires IBM MQ setup with configured queue manager and queues. See <code>app/app-vsam-mq/README.md</code> for setup instructions.</div>
+            <p style="margin-top:8px;"><strong>Business Context:</strong> Demonstrates asynchronous integration pattern for mainframe service exposure. Useful for service enablement scenarios where external systems (cloud, distributed) need to query mainframe data via messaging.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🎯 User Story Templates</h2>
+                <div class="us-template">As an <strong>external system</strong>, I want to query the mainframe system date via MQ (CDRD) so that date-sensitive operations are synchronized with the mainframe clock.</div>
+                <div class="us-template">As an <strong>external system</strong>, I want to retrieve account details via MQ (CDRA) so that I can integrate without requiring direct VSAM file access.</div>
+                <div class="us-template">As a <strong>cloud application</strong>, I want asynchronous account inquiry via MQ so that mainframe availability doesn't block my request processing.</div>
+                <div class="us-template">As a <strong>distributed system</strong>, I want standard MQ message formats so that I can integrate with the mainframe using any MQ-compatible client.</div>
+            </div>
+            <div class="card">
+                <h2>📊 Story Complexity</h2>
+                <div class="complexity">
+                    <span class="badge badge-low">Simple 1-2 pts</span>
+                    <span class="badge badge-med">Medium 3-5 pts</span>
+                    <span class="badge badge-high">Complex 5-8 pts</span>
+                </div>
+                <h3>Simple (1-2 pts)</h3>
+                <ul>
+                    <li>CDRD: read system date and return via MQ reply</li>
+                    <li>CDRA: validate request message format</li>
+                </ul>
+                <h3>Medium (3-5 pts)</h3>
+                <ul>
+                    <li>CDRA: read ACCTFILE by account ID, format response</li>
+                    <li>MQ error handling (queue full, message format errors)</li>
+                </ul>
+                <h3>Complex (5-8 pts)</h3>
+                <ul>
+                    <li>Add new MQ service endpoint for customer data</li>
+                    <li>MQ-based transaction submission from external system</li>
+                    <li>Async correlation ID tracking across multiple messages</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>✅ Acceptance Criteria Patterns</h2>
+            <div class="ac-item"><strong>Date Inquiry (CDRD):</strong> Given request message on input queue, when CODATE01 processes, then response message with current mainframe system date (YYYY-MM-DD format) is placed on reply queue identified by MQMD CorrelId.</div>
+            <div class="ac-item"><strong>Account Inquiry (CDRA):</strong> Given request message with account ID, when COACCT01 processes, then: ACCTFILE is read by account ID, account fields are formatted into response message, response is placed on MQ reply queue.</div>
+            <div class="ac-item"><strong>Account Not Found:</strong> Given request with non-existent account ID, then error response (with appropriate error code) is returned on reply queue.</div>
+            <div class="ac-item"><strong>Message Format:</strong> Request and response messages must conform to defined MQ message format; malformed messages generate error response with format error code.</div>
+            <div class="ac-item"><strong>Correlation:</strong> Response message MQMD CorrelId must match the request message MsgId for proper correlation by the requesting system.</div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <table>
+                <tr><th>Component</th><th>Transaction</th><th>Function</th></tr>
+                <tr><td><code>CODATE01.cbl</code></td><td>CDRD</td><td>System date inquiry — reads mainframe date, formats MQ response message</td></tr>
+                <tr><td><code>COACCT01.cbl</code></td><td>CDRA</td><td>Account inquiry — reads ACCTFILE, formats account data in MQ response</td></tr>
+                <tr><td>MQ input queue</td><td>—</td><td>Receives incoming request messages from external systems</td></tr>
+                <tr><td>MQ reply queue</td><td>—</td><td>Identified by MQMD ReplyToQ in request; target for response messages</td></tr>
+                <tr><td>ACCTFILE VSAM</td><td>—</td><td>Read by COACCT01 for account data (CDRA)</td></tr>
+            </table>
+            <h3>MQ Request/Response Pattern</h3>
+            <pre>-- Incoming MQ message structure:
+MQMD CorrelId / MsgId (for correlation)
+MQMD ReplyToQ (reply queue name)
+Message data: ACCOUNT-ID or inquiry parameters
+
+-- Processing:
+EXEC CICS GET QUEUE(input-queue) ...
+-- Process request, read VSAM if needed
+-- Format response data
+EXEC CICS PUT QUEUE(reply-queue) CORRELID(MsgId) ...
+
+-- Response: account data or date in defined format</pre>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>🔗 Dependencies</h2>
+                <ul>
+                    <li><strong>IBM MQ:</strong> Queue manager and queues must be configured</li>
+                    <li><strong>CICS-MQ bridge:</strong> Required for EXEC CICS MQ commands</li>
+                    <li><strong>accounts:</strong> ACCTFILE accessed by COACCT01 (CDRA)</li>
+                    <li><strong>CSD definitions:</strong> CICS resource definitions in app/app-vsam-mq/csd/</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h2>⚡ Development Acceleration</h2>
+                <ul>
+                    <li><strong>MQ request/response pattern:</strong> Fully established in CODATE01/COACCT01 — copy for any new MQ service</li>
+                    <li><strong>MQMD correlation:</strong> Correlation ID pattern documented and implemented</li>
+                    <li><strong>Error response format:</strong> Error handling pattern established — reuse for all MQ services</li>
+                    <li><strong>CSD template:</strong> CICS resource definitions in csd/ provide template for new MQ transactions</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+    <footer><p><a href="../../index.html">← Back to CardDemo Portal</a> · Last updated: March 2025</p></footer>
+</body>
+</html>
