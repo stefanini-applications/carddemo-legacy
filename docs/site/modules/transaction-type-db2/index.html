@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Type Db2 - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f3f5f9; margin:0; color:#1f1f25; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #43cea2, #185a9d); color:#fff; padding:24px; border-radius:12px; }
+        section { background:#fff; border-radius:12px; padding:24px; margin-top:20px; box-shadow:0 10px 25px rgba(0,0,0,0.08); }
+        h1, h2, h3 { margin-top:0; }
+        ul { padding-left: 18px; }
+        pre { background:#eef2fb; border-radius:8px; padding:12px; overflow:auto; }
+        footer { margin-top:30px; font-size:0.9rem; color:#555; text-align:right; }
+        footer a { color:#43cea2; text-decoration:none; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Transaction Type Management (Db2)</h1>
+            <p>Guide for stories that keep the transaction reference catalog governed by Db2 and synchronized with VSAM.</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Provide an administrative experience for managing transaction types using Db2 tables, embedded static SQL, and batch jobs that synchronize VSAM references.</p>
+            <p><strong>Business Context:</strong> This feature adds Db2 robustness for metadata, making the transaction catalogue easier to audit than flat VSAM files while still feeding the high-performance core pipeline via extraction jobs.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Admin CRUD:</strong> As an admin, I want CTTU to let me add a capture code with a description so Hudson reporting shows the new option immediately.</li>
+                <li><strong>Batch sync:</strong> As an operator, I want TRANEXTR to refresh VSAM transaction-type files after a Db2 INSERT so live transactions see the current catalog.</li>
+                <li><strong>Data hygiene:</strong> As a DBA, I want CTLI to provide backward/forward cursor patterns that help me detect stale rows before deleting them.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li>Db2 `ddl/` scripts outline `TRANSACTION_TYPE` and `TRANSACTION_TYPE_CATEGORY` structures, which can be mirrored when adding columns.</li>
+                <li>`dcl/` declarations supply SQLCA and host variable libraries so new Db2 programs reuse the same error handling.</li>
+                <li>CAM: BMS templates for `COTRTUP/COTRTLI` expedite new admin screens with consistent row layouts.</li>
+            </ul>
+
+            <h3>📊 Story Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Display a new column in CTLI's list view while keeping existing Db2 SQL unchanged.</li>
+                <li><strong>Medium (3-5 pts):</strong> Extend TRANSACTION_TYPE with a new attribute, ensure CTTU writes it, and update TRANEXTR outputs.</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce a supporting Db2 category table and cascade deletes through VSAM via an updated MNTTRDB2 job.</li>
+            </ul>
+
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>CTTU/CTLI commit Db2 transactions only when SQLCA indicates success and display BMS messages on rollback.</li>
+                <li>TRANEXTR produces VSAM files with the same number of rows as the Db2 table and sorts them before CICS consumption.</li>
+                <li>MNTTRDB2 job updates both `TRANSTIT` and derived VSAM metadata while respecting existing locks.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li>CICS programs `COTRTUPC`, `COTRTLIC` with embedded static SQL/SQLCA for Db2 CRUD operations.</li>
+                        <li>`db2/ddl` definitions for `TRANSACTION_TYPE` (code, description) and the `TRANSACTION_TYPE_CATEGORY` join table.</li>
+                        <li>`ctrans` copybooks for host variable declarations and `dcl/SQLCA` standard declarations.</li>
+                        <li>Batch jobs `CREADB21`, `TRANEXTR`, `MNTTRDB2` that create tables, extract rows, and maintain VSAM reference files.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li>Db2 subsystem availability for the `Db2: Transaction Type Mgmt` feature.</li>
+                        <li>CICS resource definitions in `app/app-transaction-type-db2/csd/` for transactions `CTTU` and `CTLI`.</li>
+                        <li>VSAM extraction utilities that consume output files from TRANEXTR to keep the online catalog current.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CTTU  - Transaction Type add/edit (COTRTUPC)
+CTLI  - Transaction Type list/update/delete (COTRTLIC)
+CREADB21 - Db2 schema creation (batch)
+TRANEXTR - Extract Db2 rows to VSAM (/DSNTIAUL)
+MNTTRDB2 - Batch maintenance job (COBTUPDT)
+</code></pre>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 11, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

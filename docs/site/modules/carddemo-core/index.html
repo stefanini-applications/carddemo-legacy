@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carddemo Core - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f4f6fb; color:#1e1e1e; margin:0; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; padding:24px; border-radius:12px 12px 0 0; }
+        .header h1 { margin:0 0 8px; }
+        section { background:#fff; padding:24px; border-radius:0 0 12px 12px; margin-bottom:20px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+        section + section { border-radius:12px; }
+        h2 { margin-top:0; }
+        ul { padding-left: 20px; }
+        pre { background:#f0f2fb; padding:12px; border-radius:6px; overflow:auto; }
+        footer { text-align:right; font-size:0.9rem; color:#555; }
+        footer a { color:#667eea; text-decoration:none; }
+        .chip { display:inline-flex; padding:3px 10px; border-radius:999px; font-size:0.75rem; background:#e3eafd; color:#333; margin-right:8px; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; }
+        .card { background:#f9f9ff; border-radius:10px; padding:12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Carddemo Core</h1>
+            <p>Guide for developing user stories that expand the hosted account/card lifecycle and batch pipeline.</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Host the baseline credit-card lifecycle (sign-on, account management, transactions, billing, reporting, and the nightly batch jobs that refresh the VSAM datasets).</p>
+            <p><strong>Business Context:</strong> CardDemo emulates a legacy mainframe bank platform; core stories keep cardholder experiences aligned with the nightly VSAM refresh and BMS-driven UI.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account visibility:</strong> As a cardholder, I want to view my transactions (CT00/CT01) so that I can reconcile spending before the next statement.</li>
+                <li><strong>Billing operations:</strong> As an officer, I want POSTTRAN + CREASTMT to run nightly so that statements portray the latest balances.</li>
+                <li><strong>Security controls:</strong> As an admin, I want CU02/CU03 workflows to only succeed under an active CC00 session so that user changes remain auditable.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Shared copybooks:</strong> `app/cpy/`, `app/cpy-bms/` hold structures like `CVACT01Y`, reducing repeated layout work.</li>
+                <li><strong>Base JCL templates:</strong> Jobs such as `ACCTFILE`, `TRANIDX`, and `CREASTMT` in `app/jcl/` can be copied/adapted for new nightly tasks.</li>
+                <li><strong>BMS map skeletons:</strong> Maps under `app/bms/` (e.g., `COACTUP`, `COMEN01`) provide ready-made regions for new navigation or messaging zones.</li>
+            </ul>
+
+            <h3>📊 Story Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a validation message to an existing BMS map (e.g., error text on CAUP).</li>
+                <li><strong>Medium (3-5 pts):</strong> Create a new transaction that reads a slightly different VSAM file and returns it to a new map.</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce a new account lifecycle workflow that spans CAUP → POSTTRAN → TRANIDX, ensuring nightly synchronization.</li>
+            </ul>
+
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>CAUP saves only when each field matches the copybook length and `IF ACCOUNT-BALANCE >= 0` passes.</li>
+                <li>Transaction list CT00 returns rows paged via `CTLI` and never leaves duplicate entries when TRANEXTR refresh runs simultaneously.</li>
+                <li>Batch job CREASTMT creates statements and signals TRANIDX before OPENFIL unlocks VSAM files.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>COBOL programs:</strong> `COSGN00C`, `COACTUP`, `COTRN00C`, `COPAUS0C` orchestrate sign-on, account updates, transactions, and pending authorizations.</li>
+                        <li><strong>BMS maps:</strong> Mapsets such as `COACTVW`, `COMEN01`, `COPAU00` render the terminal UI and embed validation prompts.</li>
+                        <li><strong>VSAM datasets:</strong> `ACCTDATA`, `CARDDATA`, `TRANSACT`, `DALYTRAN` hold production data; copybooks in `app/cpy/` define their pictures.</li>
+                        <li><strong>Batch jobs:</strong> `POSTTRAN`, `TRANEXTR`, `CREASTMT`, `TRANIDX`, `OPENFIL` orchestrate the overnight refresh.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li>CICS resources defined in `app/csd/` (program/table definitions, transaction IDs, tasks).</li>
+                        <li>Copybook library (`app/cpy/`, `app/cpy-bms/`) reused across screens for shared fields.</li>
+                        <li>Scheduler utilities (`app/scheduler/`) and dataset loaders under `app/proc/`/`app/maclib/`.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CC00  - SIGNON  (COSGN00C)
+CA00  - ADMIN MENU (COADM01C)
+CAUP  - ACCOUNT UPDATE (COACTUPC)
+CT00  - TRANSACTION LIST (COTRN00C)
+CT02  - TRANSACTION ADD (COTRN02C)
+CB00  - BILL PAYMENT (COBIL00C)
+CREASTMT, TRANIDX, POSTTRAN, TRANEXTR, OPENFIL  - Batch jobs that refresh VSAM and statements
+</code></pre>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 11, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

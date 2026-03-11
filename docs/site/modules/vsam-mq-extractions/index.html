@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSAM MQ Extractions - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9fafc; margin:0; color:#1b1b23; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #f7971e, #ffd200); color:#1b1b23; padding:24px; border-radius:12px; }
+        section { background:#fff; border-radius:12px; padding:24px; margin-top:20px; box-shadow:0 8px 20px rgba(0,0,0,0.08); }
+        h1, h2, h3 { margin-top:0; }
+        ul { padding-left: 18px; }
+        pre { background:#fff4e6; border-radius:8px; padding:12px; overflow:auto; }
+        footer { margin-top:30px; font-size:0.9rem; color:#555; text-align:right; }
+        footer a { color:#f7971e; text-decoration:none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 VSAM + MQ Extractions</h1>
+            <p>Guide for stories that expose VSAM data via MQ request/response patterns.</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Demonstrate asynchronous MQ calls (CDRD/CDRA) that query VSAM system date and account data and return structured responses for MQ consumers.</p>
+            <p><strong>Business Context:</strong> Useful when modern services need synchronized host information without running embedded BMS screens, enabling read-only integration.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Date sync:</strong> As a scheduler, I want CDRD to return system time so my nightly jobs align with the host clock.</li>
+                <li><strong>Account echo:</strong> As an integration tester, I want CDRA to deliver account snapshots via MQ so remote ledger systems can reconcile balances.</li>
+                <li><strong>Reliability:</strong> As an MQ operator, I want correlation IDs surfaced so retries trace to the original request.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li>Fixed-length message formats already defined in the README for quick reference.</li>
+                <li>Simple COBOL programs (CODATE01, COACCT01) provide templates for parsing/requesting MQ message structures.</li>
+                <li>Existing MQ connection definitions (`DEFINE MQCONN`, `MQQUEUE`) ensure new message types reuse the same channel configuration.</li>
+            </ul>
+
+            <h3>📊 Story Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1–2 pts):</strong> Add a new field to the CDRD response map (e.g., `HOST-TZ`).</li>
+                <li><strong>Medium (3–5 pts):</strong> Extend CDRA to send additional account fields and include validation for missing VSAM records.</li>
+                <li><strong>Complex (5–8 pts):</strong> Support encrypted MQ payloads, requiring new parsing logic in `CODATE01`/`COACCT01` plus key management.</li>
+            </ul>
+
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>CDRD/CDRA respond within 3 seconds and honor correlation IDs in replies.</li>
+                <li>CDRA only returns data when the account number exists in VSAM cross-reference files; otherwise, it returns an error string in the MQ payload.</li>
+                <li>MQ connection definitions (`AWS.M2.CARDDEMO.PAUTH.REQUEST/REPLY`) remain unchanged.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li>`CODATE01` handles system date requests and formats `DATE-RESPONSE-MSG`.</li>
+                        <li>`COACCT01` queries VSAM account records and populates `ACCT-RESPONSE-MSG` with 300-byte data blocks.</li>
+                        <li>MQ message definitions in the README double as documentation for request/response structure.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li>MQ artifacts under `app/app-vsam-mq/csd/` should be installed in the CICS CSD for transactions CDRD/CDRA.</li>
+                        <li>VSAM account cross-references (`CARDXREF`) must remain synchronized with `CARDDATA` and `ACCTDATA`.</li>
+                        <li>CICS MQCONN definitions must point to the same queue manager used by the authorization module.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CDRD - Inquire system date via MQ (CODATE01)
+CDRA - Inquire account details via MQ (COACCT01)
+</code></pre>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 11, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
