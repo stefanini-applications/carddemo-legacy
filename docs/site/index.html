@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo Documentation Portal</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#0f172a; color:#f1f5f9; margin:0; }
+        .hero { padding:60px 24px; text-align:center; background:linear-gradient(135deg, #1d4ed8, #22c55e); }
+        .hero h1 { margin:0 0 12px; font-size:2.8rem; }
+        .hero p { margin:0 auto; max-width:640px; }
+        .modules { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; padding:24px; }
+        .card { background:#fff; color:#0f172a; border-radius:12px; padding:20px; box-shadow:0 4px 24px rgba(15,23,42,.2); }
+        .card h3 { margin-top:0; }
+        .card a { color:#2563eb; text-decoration:none; font-weight:600; }
+        footer { text-align:center; padding:24px; color:#94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>CardDemo System Documentation</h1>
+        <p>Use these modules to craft user stories that span the core application, MQ integrations, DB2 metadata, and authorization scenarios.</p>
+    </div>
+    <div class="modules">
+        <div class="card">
+            <h3>Core Application</h3>
+            <p>Interactive CICS flows plus nightly batch jobs that manage accounts, cards, transactions, and statements.</p>
+            <p><a href="modules/core-application/index.html">Open guide →</a></p>
+        </div>
+        <div class="card">
+            <h3>Authorization</h3>
+            <p>MQ-triggered credit card authorization, IMS storage, DB2 fraud records, and summary/detail screens.</p>
+            <p><a href="modules/authorization/index.html">Open guide →</a></p>
+        </div>
+        <div class="card">
+            <h3>Transaction Type Management</h3>
+            <p>DB2 CRUD screens plus extraction jobs that keep VSAM metadata and categories synchronized.</p>
+            <p><a href="modules/transaction-type-management/index.html">Open guide →</a></p>
+        </div>
+        <div class="card">
+            <h3>Account Extractions</h3>
+            <p>MQ request/response flows that surface system dates and account data to connected services.</p>
+            <p><a href="modules/account-extractions/index.html">Open guide →</a></p>
+        </div>
+    </div>
+    <footer>
+        <p>Last updated: March 12, 2026</p>
+    </footer>
+</body>
+</html>
