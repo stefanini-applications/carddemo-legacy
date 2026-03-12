@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>authorization-ims-db2-mq - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f5f7; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        .header { background: linear-gradient(135deg, #0f9d58 0%, #38b2ac 100%); color: white; padding: 30px; border-radius: 16px; }
+        .section { background: white; padding: 24px; margin-top: 20px; border-radius: 12px; box-shadow: 0 18px 45px rgba(0,0,0,0.08); }
+        ul { padding-left: 20px; }
+        pre { background: #e8f5ff; padding: 12px; border-radius: 8px; }
+        footer { margin-top: 30px; text-align: right; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 authorization-ims-db2-mq</h1>
+            <p>Guide for user stories that follow the MQ → IMS → DB2 authorization flow.</p>
+        </header>
+        <section class="section overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Emulate real-world POS authorizations by receiving MQ requests, validating via VSAM/IMS, and tracking fraud in DB2.</p>
+            <p><strong>Business Context:</strong> This optional module represents an integration template for partner MQ clients that need to route authorization decisions back through the core CardDemo data model.</p>
+        </section>
+        <section class="section us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>MQ Approval:</strong> As a merchant emulator, I want to send a CSV-style MQ request to <code>PAUTH.REQUEST</code> and receive a response so I know whether the card was approved.</li>
+                <li><strong>Fraud Investigation:</strong> As a Fraud Analyst, I want to use <code>CPVD</code> to mark an authorization and persist the flag in the DB2 <code>AUTHFRDS</code> table.</li>
+                <li><strong>Batch Maintenance:</strong> As a Batch Operator, I want <code>CBPAUP0J</code> to purge authorizations older than 30 days to keep IMS performance stable.</li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Predefined programs:</strong> COBOL programs <code>COPAUA0C</code>, <code>COPAUS0C</code>, <code>COPAUS1C</code>, <code>COPAUS2C</code>, <code>CBPAUP0C</code> live under <code>app/app-authorization-ims-db2-mq/</code>.</li>
+                <li><strong>MQ + IMS artifacts:</strong> Queue names and DBD/PSB definitions are already defined in the extension directory; reuse the same names when building new MQ channels.</li>
+                <li><strong>DB2 schema:</strong> <code>AUTHFRDS</code> and <code>XAUTHFRD</code> are ready, so new reporting screens can join on the same table.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new MQ field to the `PAUTH.REQUEST` message and display it on the <code>CPVS</code> screen.</li>
+                <li><strong>Medium (3-5 pts):</strong> Add a fraud tagging screen that links IMS detail to DB2 rows via the existing copybooks.</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce a new MQ consumer or integrate a downstream analytics service that consumes <code>AUTHFRDS</code> data.</li>
+            </ul>
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>MQ requests/replies honor the CSV format and replicate the `AUTH-ID-CODE` + `AUTH-RESP-CODE` fields.</li>
+                <li>IMS records older than 30 days are purged only by <code>CBPAUP0J</code> and logged for audit.</li>
+                <li>Any fraud marking updates both IMS/DB2 and logs the event timestamp for analytics.</li>
+            </ul>
+        </section>
+        <section class="section technical">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>CICS programs <code>COPAUA0C</code>, <code>COPAUS0C</code>, <code>COPAUS1C</code>, <code>COPAUS2C</code>, <code>CBPAUP0C</code>.</li>
+                <li>MQ queues <code>AWS.M2.CARDDEMO.PAUTH.REQUEST</code> and <code>.REPLY</code>.</li>
+                <li>IMS DBDs, PSBs, and JCL templates under <code>app/app-authorization-ims-db2-mq/</code>.</li>
+                <li>DB2 schema with <code>AUTHFRDS</code> and <code>XAUTHFRD</code> indexes.</li>
+            </ul>
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>Requires MQ infrastructure to be reachable from CICS.</li>
+                <li>IMS HIDAM database must exist with PSBs/DBDs deployed before CICS transactions are installed.</li>
+                <li>DB2 subsystem must be bound (DB201PLN) with the `AUTHFRDS` table ready.</li>
+                <li>Relies on VSAM datasets for account cross-reference lookups.</li>
+            </ul>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CP00 (MQ-triggered authorization), CPVS/CPVD (summary/detail), CBPAUP0J (purge); MQ queues: PAUTH.REQUEST, PAUTH.REPLY; DB2 table: AUTHFRDS; IMS DBD/PSB: DBPAUTP0/DBPAUTX0 & PSBPAUTB/PSBPAUTL.</code></pre>
+        </section>
+        <footer>
+            <p><a href="../index.html">← Back to Index</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

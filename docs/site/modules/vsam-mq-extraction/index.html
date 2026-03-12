@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vsam-mq-extraction - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fbff; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        .header { background: linear-gradient(135deg, #ff6b6b 0%, #f06595 100%); color: white; padding: 30px; border-radius: 16px; }
+        .section { background: white; padding: 24px; margin-top: 20px; border-radius: 12px; box-shadow: 0 18px 45px rgba(0,0,0,0.08); }
+        ul { padding-left: 20px; }
+        pre { background: #ffeef2; padding: 12px; border-radius: 8px; }
+        footer { margin-top: 30px; text-align: right; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 vsam-mq-extraction</h1>
+            <p>Guide for MQ-driven extraction stories that surface VSAM data.</p>
+        </header>
+        <section class="section overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Demonstrate asynchronous MQ links to VSAM data for system date and account inquiries.</p>
+            <p><strong>Business Context:</strong> This module serves as a template for partner systems to request time/account details without direct VSAM access.</p>
+        </section>
+        <section class="section us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>System Date:</strong> As a scheduler, I want to query the system date via MQ (`CDRD`) so downstream systems can align runtimes.</li>
+                <li><strong>Account Lookup:</strong> As an external service, I want to send an MQ request with an account number (`CDRA`) and receive the VSAM-backed payload.</li>
+                <li><strong>MQ Correlation:</strong> As an operator, I want to confirm that replies reuse the same <code>REQUEST-ID</code> so batch consumers can correlate replies.</li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>MQ patterns:</strong> Message definitions for date/account request/response exist in the extension README, showing the required fields and lengths.</li>
+                <li><strong>COBOL programs:</strong> <code>CODATE01</code> and <code>COACCT01</code> already parse MQ requests and emit responses.</li>
+                <li><strong>Queue definitions:</strong> `CARDDEMO.REQUEST.QUEUE` and `.RESPONSE.QUEUE` are named consistently for reuse.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new output field (e.g., city) to the existing account response payload.</li>
+                <li><strong>Medium (3-5 pts):</strong> Introduce a new MQ listener that triggers a CICS map update when a queued account update arrives.</li>
+                <li><strong>Complex (5-8 pts):</strong> Extend the MQ flow to integrate with optional modules (transaction-type or authorization) and manage multiple queue managers.</li>
+            </ul>
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>MQ replies must include the same <code>REQUEST-ID</code> as the request and keep the payload within the defined record length (e.g., 300 characters for account data).</li>
+                <li>Account extract responses only include records that exist in VSAM <code>ACCTDATA</code>.</li>
+                <li>System date requests respond directly from <code>CODATE01</code> without touching VSAM.</li>
+            </ul>
+        </section>
+        <section class="section technical">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>CICS programs <code>CODATE01</code> (system date) and <code>COACCT01</code> (account details).</li>
+                <li>MQ channel definitions under <code>app/app-vsam-mq/</code> for <code>CARDDEMO.REQUEST.QUEUE</code> and <code>.RESPONSE.QUEUE</code>.</li>
+                <li>VSAM datasets for account & card data.</li>
+            </ul>
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>IBM MQ must be available and reachable from the CICS region.</li>
+                <li>The VSAM files must be populated via `core-batch` so account values exist.</li>
+                <li>RACF security entries must permit MQ-initiated CICS transactions.</li>
+            </ul>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CDRD (System Date MQ request), CDRA (Account details MQ request), CARDDEMO.REQUEST.QUEUE, CARDDEMO.RESPONSE.QUEUE, MESSAGE STRUCTURES (DATE-REQUEST/RESPONSE, ACCT-REQUEST/RESPONSE)</code></pre>
+        </section>
+        <footer>
+            <p><a href="../index.html">← Back to Index</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

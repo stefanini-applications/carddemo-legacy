@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>core-batch - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f6f6f9; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        .header { background: linear-gradient(135deg, #f59f00 0%, #f13c20 100%); color: white; padding: 30px; border-radius: 16px; }
+        .section { background: white; padding: 24px; margin-top: 20px; border-radius: 12px; box-shadow: 0 18px 45px rgba(0,0,0,0.08); }
+        ul { padding-left: 20px; }
+        pre { background: #f3f0ff; padding: 12px; border-radius: 8px; }
+        footer { margin-top: 30px; text-align: right; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 core-batch</h1>
+            <p>Guide for crafting offline jobs that fuel the CardDemo datasets.</p>
+        </header>
+        <section class="section overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Maintain VSAM data accuracy, post transactions, and produce statements via orchestrated JCL flows.</p>
+            <p><strong>Business Context:</strong> Batch jobs keep the demo environment consistent for every user story; they are the source of truth for `core-online` screens.</p>
+        </section>
+        <section class="section us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Data Refresh:</strong> As a Batch Operator, I want to refresh `ACCTFILE` before posting so that account data is complete for front-end validation.</li>
+                <li><strong>Posting Sequence:</strong> As a Compliance Analyst, I want `POSTTRAN` to follow `TRANFILE` and `TRANBKP` so that the ledger reflects all activity.</li>
+                <li><strong>Reporting:</strong> As a Reporting Owner, I want `CREASTMT` to create a statement file immediately after `COMBTRAN` so that statements include the posting window.</li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>JCL templates:</strong> Jobs named after their function (ACCTFILE, TRANEXTR, POSTTRAN) already exist under <code>app/jcl/</code>.</li>
+                <li><strong>Automation scripts:</strong> `scripts/run_full_batch.sh` and `scripts/remote_submit.sh` wrap the job dependencies.</li>
+                <li><strong>Control cards:</strong> `app/ctl/` and `samples/jcl/` provide ready-to-use IDCAMS/SORT steps.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Update an existing job parameter or add a new dataset to `ACCTFILE` without touching shared VSAM files.</li>
+                <li><strong>Medium (3-5 pts):</strong> Introduce a new dependent job (e.g., a variant of `TRANBKP`) that runs after posting steps and updates indexes.</li>
+                <li><strong>Complex (5-8 pts):</strong> Reorder the entire posting pipeline or integrate a new optional module (authorization purge) while keeping job sequencing intact.</li>
+            </ul>
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>Each job must end with IDCAMS condition code 0000 and update the correct VSAM dataset.</li>
+                <li>Job dependencies (ACCTFILE → TRANFILE → POSTTRAN → CREASTMT) are recorded in release notes.</li>
+                <li>Scripting wrappers handle job submission order and HLQ substitution before hitting the mainframe.</li>
+            </ul>
+        </section>
+        <section class="section technical">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>JCL jobs under <code>app/jcl/</code> (ACCTFILE, CARDFILE, TRANFILE, POSTTRAN, COMBTRAN, CREASTMT, TRANIDX, INTCALC, etc.).</li>
+                <li>Control cards in <code>app/ctl/</code> and helper samples under <code>samples/jcl/</code>.</li>
+                <li>Batch COBOL programs (`CBTRN02C`, `CBSTM03A`, `CBACT04C`, `CBPAUP0C`).</li>
+                <li>Scheduler definitions (`app/scheduler/CardDemo.ca7`, `.controlm`).</li>
+            </ul>
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>Tight coupling to `core-online` (VSAM files must be ready before CICS screens read them).</li>
+                <li>Feeds optional modules: approval/purge for `authorization-ims-db2-mq`, transaction type refresh for `transaction-type-db2`.</li>
+                <li>Relies on RACF identity (CC00) because jobs run under specific HLQ owners.</li>
+            </ul>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>ACCTFILE, CARDFILE, CUSTFILE, XREFFILE, TRANFILE, TRANBKP, POSTTRAN, COMBTRAN, CREASTMT, TRANIDX, INTCALC, CBPAUP0J (authorization purge)</code></pre>
+        </section>
+        <footer>
+            <p><a href="../index.html">← Back to Index</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

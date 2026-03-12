@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>core-online - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f9fd; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 16px; }
+        h1, h2, h3 { margin: 0 0 0.5em; }
+        .section { background: white; padding: 24px; margin-top: 20px; border-radius: 12px; box-shadow: 0 18px 45px rgba(0,0,0,0.08); }
+        ul { padding-left: 20px; }
+        .technical ul, .us-guide ul { margin: 0; }
+        pre { background: #eef2ff; padding: 12px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 30px; text-align: right; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 core-online</h1>
+            <p>Guide for Developing User Stories on the CICS 3270 front-end.</p>
+        </header>
+        <section class="section overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Provide the live CICS screens that let Regular Users and Admins manage accounts, credit cards, transactions, payments, and user records.</p>
+            <p><strong>Business Context:</strong> These screens sit at the center of the CardDemo experience, surfacing VSAM-backed data while respecting job-driven refreshes and RACF security policies.</p>
+        </section>
+        <section class="section us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account Visibility:</strong> As a cardholder, I want to see my account balance and APR on <code>CAVW</code> so I can know what I owe before the statement posts.</li>
+                <li><strong>Admin Control:</strong> As an Admin, I want to add a new user via <code>CU01</code> so that help desk staff gain access quickly.</li>
+                <li><strong>Transaction Audit:</strong> As an Ops lead, I want to add a transaction in <code>CT02</code> and verify its status in <code>CT00</code> so that we can reproduce customer requests.</li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Shared copybooks:</strong> <code>CVACT01Y</code>, <code>CVTRA06Y</code> define record layouts reused by every screen.</li>
+                <li><strong>BMS templates:</strong> Map sets like <code>COMEN01</code> and <code>COACTVW</code> can be cloned to build new menus with existing PF key lines.</li>
+                <li><strong>VSAM files:</strong> The datasets listed in <code>app/catlg/LISTCAT.txt</code> already expose the fields your screens need.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Update text or add message lines on an existing map (e.g., modify the PF1 help line on <code>CC00</code>).</li>
+                <li><strong>Medium (3-5 pts):</strong> Create a new screen that combines existing copybooks and VSAM fields but reuses the standard PF key layout.</li>
+                <li><strong>Complex (5-8 pts):</strong> Add a new list/detail screen that links into optional modules (e.g., show MQ authorization details with DB2 joins) while handling stateful navigation.</li>
+            </ul>
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>Every new screen must display the expected VSAM field values within 2 seconds and show PF hints on line 24.</li>
+                <li>Navigation between menus must use existing PF keys (PF3 to exit, PF5 for detail, PF7/PF8 for paging).</li>
+                <li>All inputs pass `88`-level validation before issuing an `EXEC CICS SEND MAPSET`.</li>
+            </ul>
+        </section>
+        <section class="section technical">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>COBOL programs under <code>app/cbl/</code> (e.g., <code>COACTVW</code>, <code>COCRDUP</code>, <code>COTRN00</code>).</li>
+                <li>BMS map sets under <code>app/bms/</code> (COSGN00, COMEN01, COACTVW, etc.).</li>
+                <li>Copybooks in <code>app/cpy/</code> and <code>app/cpy-bms/</code> ensure consistent layouts across screens and batch jobs.</li>
+                <li>CICS resource definitions in <code>app/csd/</code> that wire transactions to programs and VSAM files.</li>
+            </ul>
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>Depends on VSAM datasets refreshed by <code>core-batch</code>.</li>
+                <li>Can surface data from optional modules (<code>authorization-ims-db2-mq</code>, <code>transaction-type-db2</code>, <code>vsam-mq-extraction</code>).</li>
+                <li>RACF entries must exist for each new transaction id.</li>
+            </ul>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CC00 (Signon), CM00 (Main Menu), CAVW/CAUP (Account view/update), CCLI/CCDL/CCUP (Card list/details), CT00/CT01/CT02 (Transaction list/detail/add), CR00 (Reports), CB00 (Bill payments), CA00 (Admin menu), CU00-03 (User management)</code></pre>
+        </section>
+        <footer>
+            <p><a href="../index.html">← Back to Index</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

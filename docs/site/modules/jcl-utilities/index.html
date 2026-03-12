@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jcl-utilities - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f2f6ff; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        .header { background: linear-gradient(135deg, #805ad5 0%, #d53f8c 100%); color: white; padding: 30px; border-radius: 16px; }
+        .section { background: white; padding: 24px; margin-top: 20px; border-radius: 12px; box-shadow: 0 18px 45px rgba(0,0,0,0.08); }
+        ul { padding-left: 20px; }
+        pre { background: #ececff; padding: 12px; border-radius: 8px; }
+        footer { margin-top: 30px; text-align: right; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 jcl-utilities</h1>
+            <p>Guide for stories that move data in/out of CardDemo via utility jobs.</p>
+        </header>
+        <section class="section overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Provide auxiliary jobs (FTP, TXT2PDF, DB2/IMS exchange, internal reader) that operators use for maintenance, audit, and integration.</p>
+            <p><strong>Business Context:</strong> These jobs sit outside the core online/batch experience but are essential for modernization demos showing data handoff to external systems.</p>
+        </section>
+        <section class="section us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>FTP Export:</strong> As an Integration Engineer, I want <code>FTPJCL.JCL</code> to copy a dataset to a partner server so that downstream analytics can consume the ledger.</li>
+                <li><strong>Text-to-PDF:</strong> As a Compliance Officer, I want <code>TXT2PDF1.JCL</code> to create a PDF-friendly bill for archiving.</li>
+                <li><strong>DB2 Movement:</strong> As a DB2 Administrator, I want <code>CBEXPORT.jcl</code> and <code>CBIMPORT.jcl</code> to move table snapshots in/out of CardDemo.</li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Job templates:</strong> The `app/jcl/` folder already contains FTP, TXT2PDF, CBIMPORT/CBEXPORT, and INTRDR jobs—duplicate the structure for new utility jobs.</li>
+                <li><strong>Scripts:</strong> `scripts/upld_module.sh` and `scripts/local_compile.sh` orchestrate remote job submission.</li>
+                <li><strong>Control definitions:</strong> `app/ctl/` control cards can be reused for dataset definitions and sort steps.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Adjust a dataset name or FTP destination in `FTPJCL.JCL`.</li>
+                <li><strong>Medium (3-5 pts):</strong> Add a new TXT2PDF conversion that accepts extra metadata fields.</li>
+                <li><strong>Complex (5-8 pts):</strong> Build a multi-step utility that coordinates IMS load/unload with DB2 staging and notifications.</li>
+            </ul>
+            <h3>✅ Acceptance Criteria Examples</h3>
+            <ul>
+                <li>FTP/TXT2PDF jobs must land their output in the expected HLQ and include proper `DD DISP` parameters.</li>
+                <li>DB2 load/unload jobs (CBIMPORT/CBEXPORT) must include SQLCA handling and end with condition code 0.</li>
+                <li>Internal reader jobs must not run concurrently with active data load jobs to avoid dataset contention.</li>
+            </ul>
+        </section>
+        <section class="section technical">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>Utility JCL in <code>app/jcl/</code>: <code>FTPJCL.JCL</code>, <code>TXT2PDF1.JCL</code>, <code>CBIMPORT.jcl</code>, <code>CBEXPORT.jcl</code>, <code>INTRDRJ1.JCL</code>, <code>INTRDRJ2.JCL</code>.</li>
+                <li>Control cards from <code>app/ctl/</code> filtered by job type.</li>
+                <li>Scripts under <code>scripts/</code> that standardize HLQ substitution and remote submission.</li>
+            </ul>
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>FTP jobs require an external SFTP/FTP endpoint and credentials stored in the job profile.</li>
+                <li>TXT2PDF and internal reader jobs depend on VSAM datasets produced by <code>core-batch</code>.</li>
+                <li>DB2 load/unload jobs need the DB2 subsystem up and the target tables accessible.</li>
+            </ul>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>FTPJCL.JCL, TXT2PDF1.JCL, CBIMPORT.jcl, CBEXPORT.jcl, INTRDRJ1.JCL, INTRDRJ2.JCL (internal reader), supporting control cards in app/ctl/</code></pre>
+        </section>
+        <footer>
+            <p><a href="../index.html">← Back to Index</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

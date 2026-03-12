@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo Documentation Home</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f8fb; margin: 0; }
+        .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+        h1 { margin-bottom: 0.25em; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        a { color: #2c64f5; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="card">
+            <h1>📚 CardDemo Documentation</h1>
+            <p>This portal centralizes the system overview plus module-specific user story guides.</p>
+        </header>
+        <section class="card">
+            <h2>System Overview</h2>
+            <p><a href="../system-overview.md">System CardDemo - Overview for User Stories</a></p>
+        </section>
+        <section class="card">
+            <h2>Module Guides</h2>
+            <ul>
+                <li><a href="modules/core-online/index.html">core-online</a> — Online CICS screens for accounts, cards, transactions, and user management.</li>
+                <li><a href="modules/core-batch/index.html">core-batch</a> — Batch jobs and scripts that keep VSAM data and statements synchronized.</li>
+                <li><a href="modules/authorization-ims-db2-mq/index.html">authorization-ims-db2-mq</a> — MQ-based authorization flows with IMS and DB2.</li>
+                <li><a href="modules/transaction-type-db2/index.html">transaction-type-db2</a> — Admin-facing DB2 transaction type management and sync jobs.</li>
+                <li><a href="modules/vsam-mq-extraction/index.html">vsam-mq-extraction</a> — VSAM account/date extraction via MQ request/response.</li>
+                <li><a href="modules/jcl-utilities/index.html">jcl-utilities</a> — FTP, TXT2PDF, DB2/IMS load-unload, and reader utilities.</li>
+            </ul>
+        </section>
+        <footer class="card">
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
