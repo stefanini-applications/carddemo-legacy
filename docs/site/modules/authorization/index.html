@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f0f4ff; }
+        .container { max-width: 1024px; margin: 0 auto; padding: 24px; }
+        .header { padding: 24px; color: white; border-radius: 8px; background: linear-gradient(135deg, #0f172a 0%, #14b8a6 100%); }
+        .header h1 { margin: 0; }
+        .section { background: white; padding: 20px; margin-top: 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
+        h2 { margin-top: 0; }
+        ul { padding-left: 20px; }
+        pre { background: #0b1120; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; }
+        footer { margin-top: 24px; font-size: 0.9rem; text-align: center; }
+        a { color: #0f172a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Authorization</h1>
+            <p>Guide for building user stories around the MQ/IMS/DB2 authorization extension.</p>
+        </header>
+
+        <section class="section">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Showcase a multi-system credit card authorization pipeline that validates requests via MQ, persists decisions in IMS, and captures fraud metadata in DB2.</p>
+            <p><strong>Business Context:</strong> This module proves how a workaround for PCI-style authorizations can live on the mainframe: MQ clients send requests, CICS/MQ programs (`CP00`) apply business rules, responses are queued, and auditors review stored IMS/DB2 data.</p>
+        </section>
+
+        <section class="section">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Authorization flow:</strong> As an MQ-integrated merchant simulator, I want to send authorization requests and receive approvals or declines so that my downstream POS system knows whether to accept the charge.</li>
+                <li><strong>Fraud tracking:</strong> As an analyst, I want to flag a suspicious authorization and have `AUTHFRDS` capture the fraud indicator before the next reporting cycle.</li>
+                <li><strong>Cleanup:</strong> As operations, I want to purge expired authorizations nightly so IMS storage stays performant.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Message formats:</strong> Request/response copybooks in `app/app-authorization-ims-db2-mq` already define `DATE-REQUEST-MSG`, `ACCT-REQUEST-MSG`, etc., so new MQ listeners can reuse the layouts.</li>
+                <li><strong>Shared DDL:</strong> The `AUTHFRDS` schema and index SQL scripts are ready to drop into DB2 and only need schema names replaced.</li>
+                <li><strong>CICS resources:</strong> Provided `csd/` definitions for `CP00`, `CPVS`, `CPVD`, and DB2 plans simplify deployment; reuse them when introducing more MQ-triggered flows.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple:</strong> Adjust the MQ request validation (e.g., allow additional `REQUEST-TYPE` codes) by editing the COBOL field processing in `COPAUA0C`.</li>
+                <li><strong>Medium:</strong> Add a new authorization status screen in CICS, link it to `CPVD`, and update DB2 inserts accordingly.</li>
+                <li><strong>Complex:</strong> Introduce a new IMS DB for additional fraud metadata, update the two-phase commit logic, and ensure MQ responses still correlate correctly.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>COBOL programs `COPAUA0C`, `COPAU00C`, `COPAU01C`, `COPAUS2C` under `app/app-authorization-ims-db2-mq/cbl`.</li>
+                <li>IMS DBD/PSB definitions in `app/app-authorization-ims-db2-mq/ims` for HIDAM storage of authorization records.</li>
+                <li>DB2 DDL and control cards (`AUTHFRDS`, indexes) plus `CBPAUP0C` for nightly purges.</li>
+                <li>MQ connection definitions and queue names (`CARDDEMO.REQUEST.QUEUE`, `CARDDEMO.RESPONSE.QUEUE`) controlled via `csd/` resources.</li>
+            </ul>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>IBM MQ queue manager reachable from CICS.</li>
+                <li>IMS HIDAM database for `AUTHDS` storage.</li>
+                <li>DB2 subsystem with the `AUTHFRDS` table and indexes.</li>
+                <li>VSAM datasets for account/customer lookups (reused from core).</li>
+            </ul>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CP00  - Authorization MQ listener / COPAUA0C
+CPVS  - Pending authorization summary / COPAU00C
+CPVD  - Authorization detail/edit / COPAU01C
+MQ: CARDDEMO.REQUEST.QUEUE / CARDDEMO.RESPONSE.QUEUE (request/response correlation via IDs)
+Batch job: CBPAUP0J purges expired authorizations</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>An MQ authorization request with a valid account number inserts a row into both IMS HIDAM and DB2 `AUTHFRDS`, then sends an approval response with `AUTH_RESP_CODE='00'`.</li>
+                <li>Flagging an authorization as fraud on `CPVD` toggles `AUTH_FRAUD` in the DB2 table and marks the record in IMS for analysts.</li>
+                <li>`CBPAUP0J` removes authorizations older than the configured retention period without leaving orphaned MQ responses.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to system overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

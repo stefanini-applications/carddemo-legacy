@@ -1,0 +1,20 @@
+# Module File Map
+<!-- MODULE_FILE_MAP_START -->
+app/asm/** = core
+app/bms/** = core
+app/cbl/** = core
+app/cpy/** = core
+app/cpy-bms/** = core
+app/csd/** = core
+app/ctl/** = core
+app/data/** = core
+app/jcl/** = core
+app/maclib/** = core
+app/proc/** = core
+app/scheduler/** = core
+app/samples/** = core
+scripts/** = core
+app/app-authorization-ims-db2-mq/** = authorization
+app/app-transaction-type-db2/** = transaction-type
+app/app-vsam-mq/** = vsam-mq
+<!-- MODULE_FILE_MAP_END -->

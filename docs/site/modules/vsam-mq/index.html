@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSAM MQ - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f7f9fb; }
+        .container { max-width: 1024px; margin: 0 auto; padding: 24px; }
+        .header { padding: 24px; color: white; border-radius: 8px; background: linear-gradient(135deg, #0f172a 0%, #059669 100%); }
+        .header h1 { margin: 0; }
+        .section { background: white; padding: 20px; margin-top: 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
+        h2 { margin-top: 0; }
+        ul { padding-left: 20px; }
+        pre { background: #0b1120; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; }
+        footer { margin-top: 24px; font-size: 0.9rem; text-align: center; }
+        a { color: #0f172a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 VSAM MQ</h1>
+            <p>Guide for building integration stories around MQ-driven account/date inquiries.</p>
+        </header>
+
+        <section class="section">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Provide MQ request/response patterns that surface VSAM account data and the system date to external clients.</p>
+            <p><strong>Business Context:</strong> Demonstrates asynchronous integration by letting remote services query mainframe data without using terminals—critical for modernization proofs asking how MQ can replace direct screen scraping.</p>
+        </section>
+
+        <section class="section">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Date inquiry:</strong> As a scheduler, I want to get the current mainframe date via MQ so that I can keep distributed jobs aligned.</li>
+                <li><strong>Account detail:</strong> As a partner service, I want to request account information with `CDRA` and receive a 300-byte payload so I can display cardholder data in my UI.</li>
+                <li><strong>Error paths:</strong> As an engineer, I want the MQ flow to surface descriptive errors if VSAM datasets are offline or MQCONN fails.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Field layouts:</strong> `DATE-REQUEST/RESPONSE` and `ACCT-REQUEST/RESPONSE` copybooks already describe every MQ payload field.</li>
+                <li><strong>CICS-MQ definitions:</strong> The `csd/` directory includes `MQCONN`, `MQQUEUE`, and `TRAN` definitions; copy them when adding new request types.</li>
+                <li><strong>Reuse VSAM lookups:</strong> COBOL code references the same copybooks as the core module, so new MQ programs can call the same record parsers.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple:</strong> Extend the `DATE-REQUEST` message with another header field and update the response filler.</li>
+                <li><strong>Medium:</strong> Add a new MQ flow that returns cardholder address data by reusing VSAM account copybooks.</li>
+                <li><strong>Complex:</strong> Add support for asynchronous multi-queue correlation and fallback to DB2 when VSAM is unavailable.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>COBOL programs `CODATE01` and `COACCT01` under `app/app-vsam-mq/cbl` that drive MQ requests/responses.</li>
+                <li>Copybooks defining `DATE-REQUEST-MSG`, `DATE-RESPONSE-MSG`, `ACCT-REQUEST-MSG`, and `ACCT-RESPONSE-MSG` with correlation IDs.</li>
+                <li>CICS definitions (`csd/`) for MQ connections (`MQ01`) and queues (`CARDREQ`, `CARDRES`).</li>
+            </ul>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>IBM MQ queue manager reachable from the CICS region.</li>
+                <li>VSAM account files (`ACCTDATA`) for lookups.</li>
+                <li>Core module for BMS/copybook reuse—MQ responses share field layouts with screens like `COACTVW`.</li>
+            </ul>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CDRD  - System date request / CODATE01 (MQ request-type 'DATE')
+CDRA  - Account details request / COACCT01 (MQ request-type 'ACCT')
+MQ QUEUES: CARDDEMO.REQUEST.QUEUE → CARDDEMO.RESPONSE.QUEUE
+Correlation: REQUEST-ID/RESPONSE-ID fields in the payloads</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>A `CDRD` MQ request returns a response with `SYSTEM-DATE` populated and `RESPONSE-TYPE='DATE'` within 500 ms.</li>
+                <li>A `CDRA` request with a valid `ACCOUNT-NUMBER` returns the 300-byte account payload, and the response is correlated using the same `REQUEST-ID`.</li>
+                <li>If MQ is unable to connect, the COBOL program returns a descriptive error in `DFHRESP` and leaves the response queue untouched.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to system overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

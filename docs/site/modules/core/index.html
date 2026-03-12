@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f5f6fa; }
+        .container { max-width: 1024px; margin: 0 auto; padding: 24px; }
+        .header { padding: 24px; color: white; border-radius: 8px; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%); }
+        .header h1 { margin: 0; }
+        .section { background: white; padding: 20px; margin-top: 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08); }
+        h2 { margin-top: 0; }
+        ul { padding-left: 20px; }
+        pre { background: #0f172a; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; }
+        footer { margin-top: 24px; font-size: 0.9rem; text-align: center; }
+        a { color: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Core</h1>
+            <p>Guidelines for delivering the baseline credit-card lifecycle functionality.</p>
+        </header>
+
+        <section class="section">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Surface accounts, cards, transactions, bill payments, statements, and user management through CICS/BMS backed by VSAM.</p>
+            <p><strong>Business Context:</strong> This is the experience regulators, analysts, and cardholders see in demos: a terminal-driven workflow from signon (CC00) through menu navigation (CM00) into detail screens. Batch jobs keep the VSAM datasets ready for next-day processing.</p>
+        </section>
+
+        <section class="section">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account view:</strong> As a cardholder, I want to see my account balance, credit limits, and cycle dates so that I can confirm there are no unexpected holds before paying.</li>
+                <li><strong>Transactions:</strong> As an operations analyst, I want to list recent transactions (CT00) with search filters so that I can investigate disputes without leaving CICS.</li>
+                <li><strong>User management:</strong> As an admin, I want to add a user through the CU01 screen so they can access the simulator quickly.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Reusable copybooks:</strong> Records like `CUSTOMER-RECORD` and `ACCOUNT-RECORD` under `app/cpy/` keep fields consistent when new screens or batch jobs read VSAM files.</li>
+                <li><strong>BMS map templates:</strong> Screens such as `COACTVW.bms` and `COTRN00.bms` use the same layout helper fields (e.g., `SEL000n` selection indicators) so copy-pasting for new listings takes minutes.</li>
+                <li><strong>Batch shells:</strong> Existing JCL jobs can be cloned (e.g., copy `CREASTMT.jcl`) to add new dataset loads or reporting runs with minimal extra steps.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Tweak a BMS label, add a new field to an existing copybook, or adjust a Validation clause in COBOL.</li>
+                <li><strong>Medium (3-5 pts):</strong> Extend a CICS screen that composes multiple copybooks, add a new list column, or insert a small batch step into the morning job chain.</li>
+                <li><strong>Complex (5-8 pts):</strong> Add a new VSAM dataset, align its BMS representation, and update the nightly JCL flow plus any derived statements.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li>COBOL programs under `app/cbl/` (e.g., `COSGN00C`, `COACTUPC`, `COTRN00C`, `CBSTM03A`) orchestrating screen interaction and VSAM access.</li>
+                <li>Copybooks (`app/cpy/`) defining customer, account, card, transaction, and statement records.</li>
+                <li>BMS map sets (`app/bms/`) that define input fields, validation keys, and listings (e.g., `COTRN00` for transaction lists).</li>
+                <li>JCL procedures under `app/jcl/` for initial dataset loads (`ACCTFILE`), batch posting (`POSTTRAN`), statements (`CREASTMT`), and reports.</li>
+            </ul>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>CICS region with RACF user-ID support (ADMIN001, USER0001).</li>
+                <li>VSAM KSDS/ESDS datasets for `ACCTDATA`, `CARDDATA`, `DALYTRAN`, and `USRSEC`.</li>
+                <li>Assembler macros (MVSWAIT, etc.) from `app/asm/` used by job control.</li>
+                <li>Scripts such as `scripts/local_compile.sh` to compile and upload programs.</li>
+            </ul>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CC00  - Signon / COSGN00C
+CM00  - Main menu / COMEN01C
+CAVW  - Account View / COACTVWC
+CAUP  - Account Update / COACTUPC
+CT00  - Transaction List / COTRN00C
+CT01  - Transaction View / COTRN01C
+CT02  - Transaction Add / COTRN02C
+CB00  - Bill Payment / COBIL00C
+CU00-CU03 - User CRUD
+CR00  - Transaction Reports / CORPT00C
+Batch jobs: ACCTFILE, CARDFILE, TRANBKP, POSTTRAN, CREASTMT, TRANREPT, INTCALC</code></pre>
+        </section>
+
+        <section class="section">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>When a valid account number is entered on `CAVW`, the screen shows the expected credit limit, balances, and cycle stats within 2 s.</li>
+                <li>Searching `CT00` for a transaction ID returns the matching row plus full date/amount details and allows the user to press ENTER to open `CT01`.</li>
+                <li>`POSTTRAN` nightly job completes without errors and produces a refreshed `DALYTRAN` file used by `CREASTMT`.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to system overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
