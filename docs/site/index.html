@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo - Documentation Index</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.85; max-width: 600px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .stat-card { background: white; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stat-card .number { font-size: 2em; font-weight: 700; color: #0f3460; }
+        .stat-card .label { color: #666; font-size: 0.9em; margin-top: 5px; }
+        h2 { font-size: 1.6em; margin-bottom: 20px; color: #1a1a2e; border-bottom: 3px solid #0f3460; padding-bottom: 10px; }
+        .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .module-card { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: block; }
+        .module-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+        .module-card h3 { font-size: 1.1em; margin-bottom: 8px; }
+        .module-card p { font-size: 0.88em; color: #555; line-height: 1.5; }
+        .module-card .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; margin-top: 10px; }
+        .core { border-color: #0f3460; } .core .badge { background: #e8f0fe; color: #0f3460; }
+        .optional { border-color: #e07b39; } .optional .badge { background: #fff3e0; color: #e07b39; }
+        .footer { text-align: center; padding: 30px; color: #888; font-size: 0.9em; border-top: 1px solid #e0e0e0; }
+        .quick-links { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px; }
+        .quick-links ul { list-style: none; display: flex; flex-wrap: wrap; gap: 12px; }
+        .quick-links a { display: inline-block; padding: 8px 16px; background: #0f3460; color: white; border-radius: 6px; text-decoration: none; font-size: 0.9em; }
+        .quick-links a:hover { background: #16213e; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💳 CardDemo Documentation</h1>
+        <p>User Story Development Guide — Mainframe Credit Card Management Application</p>
+    </div>
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card"><div class="number">11</div><div class="label">Modules</div></div>
+            <div class="stat-card"><div class="number">25+</div><div class="label">CICS Transactions</div></div>
+            <div class="stat-card"><div class="number">15+</div><div class="label">Batch Jobs</div></div>
+            <div class="stat-card"><div class="number">8</div><div class="label">Core Data Stores</div></div>
+        </div>
+
+        <div class="quick-links">
+            <strong>Quick Links: </strong>
+            <ul>
+                <li><a href="../../system-overview.md">📄 system-overview.md</a></li>
+                <li><a href="../../module-file-map.md">🗺️ module-file-map.md</a></li>
+            </ul>
+        </div>
+
+        <h2>📦 Core Modules</h2>
+        <div class="modules-grid">
+            <a class="module-card core" href="modules/authentication/index.html">
+                <h3>🔐 Authentication</h3>
+                <p>User signon, credential validation, role-based routing to Admin or User menu. CC00 transaction.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/accounts/index.html">
+                <h3>💼 Accounts</h3>
+                <p>View and update credit card account details, balances, credit limits and billing information.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/credit-cards/index.html">
+                <h3>💳 Credit Cards</h3>
+                <p>List, view, and update credit card records. Manages card-to-account-to-customer cross-reference.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/transactions/index.html">
+                <h3>💸 Transactions</h3>
+                <p>Online transaction list, detail view, and manual transaction entry. VSAM KSDS with AIX.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/bill-payment/index.html">
+                <h3>🧾 Bill Payment</h3>
+                <p>Cardholder bill payment processing against account balance. CB00 transaction.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/reports/index.html">
+                <h3>📊 Reports</h3>
+                <p>Transaction detail reports and account statements in plain-text and HTML formats.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/user-management/index.html">
+                <h3>👤 User Management</h3>
+                <p>Admin functions to list, add, update, and delete users in the USRSEC security file.</p>
+                <span class="badge">Core</span>
+            </a>
+            <a class="module-card core" href="modules/batch-processing/index.html">
+                <h3>⚙️ Batch Processing</h3>
+                <p>Nightly transaction posting, interest calculation, file maintenance, and statement generation.</p>
+                <span class="badge">Core</span>
+            </a>
+        </div>
+
+        <h2>🔌 Optional Modules</h2>
+        <div class="modules-grid">
+            <a class="module-card optional" href="modules/authorization/index.html">
+                <h3>🛡️ Authorization (IMS/DB2/MQ)</h3>
+                <p>Real-time credit card authorization via MQ, IMS DB storage, DB2 fraud analytics, batch purge.</p>
+                <span class="badge">Optional</span>
+            </a>
+            <a class="module-card optional" href="modules/transaction-type-db2/index.html">
+                <h3>🗄️ Transaction Type DB2</h3>
+                <p>Maintain transaction type and category reference data in DB2. CICS and batch interfaces.</p>
+                <span class="badge">Optional</span>
+            </a>
+            <a class="module-card optional" href="modules/mq-integration/index.html">
+                <h3>📨 MQ Integration</h3>
+                <p>MQ request/response for system date inquiry and account detail inquiry from external clients.</p>
+                <span class="badge">Optional</span>
+            </a>
+        </div>
+    </div>
+    <div class="footer">
+        <p>CardDemo — AWS Mainframe Migration &amp; Modernization Reference Application | Last updated: 2025-03-12</p>
+    </div>
+</body>
+</html>

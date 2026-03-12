@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>📋 Transactions</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>Supports online transaction listing (<code>CT00</code>), detail view (<code>CT01</code>), and manual add (<code>CT02</code>). Transactions are stored in the <code>TRANSACT</code> VSAM KSDS (350-byte records) with an Alternate Index on card number. Daily transactions arrive via the <code>DALYTRAN</code> sequential file and are batch-posted by <code>CBTRN02C</code>. Transaction type and category codes are validated against reference data files.</p>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>Programs</h3>
+    <ul>
+      <li><code>COTRN00C</code> — Transaction list screen</li>
+      <li><code>COTRN01C</code> — Transaction detail view</li>
+      <li><code>COTRN02C</code> — Manual transaction add</li>
+    </ul>
+
+    <h3>BMS Maps</h3>
+    <ul>
+      <li><code>COTRN00</code> — Transaction list map</li>
+      <li><code>COTRN01</code> — Transaction detail map</li>
+      <li><code>COTRN02</code> — Transaction add map</li>
+    </ul>
+
+    <h3>CICS Transactions</h3>
+    <pre>CT00  →  COTRN00C
+CT01  →  COTRN01C
+CT02  →  COTRN02C</pre>
+
+    <h3>Data Stores</h3>
+    <table>
+      <tr><th>File</th><th>Type</th><th>Description</th><th>Primary Key</th></tr>
+      <tr><td><code>TRANSACT</code></td><td>VSAM KSDS + AIX</td><td>Online transaction records — 350-byte records; AIX on card number</td><td>TRAN-ID (PIC X(16))</td></tr>
+      <tr><td><code>TRANTYPE</code></td><td>VSAM KSDS</td><td>Transaction type code reference</td><td>TRAN-TYPE-CD (PIC X(02))</td></tr>
+      <tr><td><code>TRANCATG</code></td><td>VSAM KSDS</td><td>Transaction category code reference</td><td>TRAN-CAT-CD (PIC 9(04))</td></tr>
+    </table>
+
+    <h3>Key Transaction Fields</h3>
+    <table>
+      <tr><th>Field</th><th>Picture</th><th>Description</th></tr>
+      <tr><td><code>TRAN-ID</code></td><td>PIC X(16)</td><td>Transaction identifier (primary key)</td></tr>
+      <tr><td><code>TRAN-TYPE-CD</code></td><td>PIC X(02)</td><td>Transaction type code (validated vs TRANTYPE)</td></tr>
+      <tr><td><code>TRAN-CAT-CD</code></td><td>PIC 9(04)</td><td>Category code (validated vs TRANCATG)</td></tr>
+      <tr><td><code>TRAN-AMT</code></td><td>PIC S9(09)V99</td><td>Amount — signed (positive=debit, negative=credit)</td></tr>
+      <tr><td><code>TRAN-MERCHANT-NAME</code></td><td>PIC X(50)</td><td>Merchant name</td></tr>
+      <tr><td><code>TRAN-CARD-NUM</code></td><td>PIC X(16)</td><td>Associated card number (AIX key)</td></tr>
+      <tr><td><code>TRAN-ORIG-TS</code></td><td>PIC X(26)</td><td>Original transaction timestamp</td></tr>
+    </table>
+
+    <h3>Copybooks</h3>
+    <ul>
+      <li><code>CVTRA05Y</code> — Online transaction record layout</li>
+      <li><code>CVTRA06Y</code> — Daily transaction (DALYTRAN) layout</li>
+      <li><code>CVTRA03Y</code> — Transaction type record layout</li>
+      <li><code>CVTRA04Y</code> — Transaction category record layout</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Tags</th></tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to list my recent transactions so that I can monitor charges on my account.</td>
+        <td><span class="tag tag-green">Read-only</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to view the details of a specific transaction including merchant information.</td>
+        <td><span class="tag tag-green">Read-only</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to manually add a transaction record so that I can document a payment.</td>
+        <td><span class="tag tag-blue">Write</span></td>
+      </tr>
+      <tr>
+        <td>Auditor</td>
+        <td>As an auditor, I want to search transactions by card number so that I can investigate specific card activity.</td>
+        <td><span class="tag tag-orange">Search</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>Reference <code>TRAN-TYPE-CD</code> and <code>TRAN-CAT-CD</code> validation in add/update stories.</li>
+      <li>Manual add stories should specify that type and category codes must exist in <code>TRANTYPE</code> and <code>TRANCATG</code>.</li>
+      <li>Signed amount behavior must be specified: positive = debit (charge), negative = credit (refund/payment).</li>
+      <li>Search-by-card-number stories use the AIX on <code>TRANSACT</code> — note the browse vs. random access distinction.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>List/view transactions (read-only, existing screens)</li>
+          <li>Paginate transaction list (scroll forward/back)</li>
+          <li>Display transaction amount sign convention on screen</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Manually add transaction with type/category validation</li>
+          <li>Filter transaction list by type code</li>
+          <li>Sort transaction list by date or amount</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>Transaction search by date range (AIX browse with range logic)</li>
+          <li>Dispute workflow: flag transaction + update status + notify</li>
+          <li>Batch posting reconciliation report (DALYTRAN vs. TRANSACT comparison)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>Posted transactions exist in TRANSACT for an account</td>
+        <td>User views the transaction list via CT00</td>
+        <td>Transactions are displayed in reverse chronological order</td>
+      </tr>
+      <tr>
+        <td>An invalid transaction type code is entered on the add screen</td>
+        <td>User submits the add form via CT02</td>
+        <td>Error is displayed and no record is written to TRANSACT</td>
+      </tr>
+      <tr>
+        <td>A new transaction is manually added via CT02</td>
+        <td>User views the transaction detail via CT01</td>
+        <td>All fields match the values entered during add</td>
+      </tr>
+      <tr>
+        <td>An invalid DALYTRAN record (unknown card number) arrives in batch</td>
+        <td>CBTRN02C (POSTTRAN) processes DALYTRAN</td>
+        <td>Record is written to DALYREJS with appropriate reason code</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>Amount sign:</strong> <code>TRAN-AMT</code> is signed — positive values represent debits (charges); negative values represent credits (payments, refunds).</li>
+      <li><strong>Rejected transactions:</strong> Daily transactions that fail validation during batch posting are written to <code>DALYREJS</code> sequential file with a reason code.</li>
+      <li><strong>Reference validation:</strong> <code>TRAN-TYPE-CD</code> and <code>TRAN-CAT-CD</code> must exist in <code>TRANTYPE</code> and <code>TRANCATG</code> reference files respectively.</li>
+      <li><strong>Card number AIX:</strong> <code>TRANSACT</code> has an Alternate Index on <code>TRAN-CARD-NUM</code> enabling browsing transactions by card without full file scan.</li>
+      <li><strong>Batch posting:</strong> <code>CBTRN02C</code> processes <code>DALYTRAN</code> and updates both <code>TRANSACT</code> and <code>ACCTFILE</code> balances.</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>

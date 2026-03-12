@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>📊 Reports</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>Online report request screen (<code>CR00</code> / <code>CORPT00C</code>) submits the <code>TRANREPT</code> batch job via the internal reader (JCL submission). Batch programs <code>CBTRN03C</code> produce a detailed transaction report, while <code>CBSTM03A</code> and <code>CBSTM03B</code> generate account statements in both plain text and HTML formats. Date range parameters are passed via the <code>DATEPARM</code> sequential file.</p>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>Programs</h3>
+    <ul>
+      <li><code>CORPT00C</code> — CICS report request screen: collects parameters and submits JCL via internal reader</li>
+      <li><code>CBTRN03C</code> — Batch: transaction detail report generator</li>
+      <li><code>CBSTM03A</code> — Batch: account statement (plain text and HTML)</li>
+      <li><code>CBSTM03B</code> — Batch: statement formatting subroutine (called by CBSTM03A)</li>
+    </ul>
+
+    <h3>BMS Map</h3>
+    <ul>
+      <li><code>CORPT00</code> — Report request screen map</li>
+    </ul>
+
+    <h3>CICS Transaction</h3>
+    <pre>CR00  →  CORPT00C</pre>
+
+    <h3>Batch Jobs</h3>
+    <table>
+      <tr><th>Job Name</th><th>Program</th><th>Description</th></tr>
+      <tr><td><code>TRANREPT</code></td><td>CBTRN03C</td><td>Transaction detail report for date range</td></tr>
+      <tr><td><code>CREASTMT</code></td><td>CBSTM03A</td><td>Account statement generation (text + HTML)</td></tr>
+    </table>
+
+    <h3>Data Stores</h3>
+    <table>
+      <tr><th>File</th><th>Access</th><th>Description</th></tr>
+      <tr><td><code>TRANSACT</code></td><td>Read</td><td>Transaction data input for reports</td></tr>
+      <tr><td><code>ACCTFILE</code></td><td>Read</td><td>Account data input for statements</td></tr>
+      <tr><td><code>DATEPARM</code></td><td>Read</td><td>Sequential file: date range parameters for filtering</td></tr>
+      <tr><td><code>STMTFILE</code></td><td>Write</td><td>Plain text statement output</td></tr>
+      <tr><td><code>HTMLFILE</code></td><td>Write</td><td>HTML statement output</td></tr>
+      <tr><td><code>TRANREPT</code></td><td>Write</td><td>Transaction report output file</td></tr>
+    </table>
+
+    <h3>Copybooks</h3>
+    <ul>
+      <li><code>COSTM01</code> — Statement record layout</li>
+      <li><code>CVTRA03Y</code> — Transaction type layout</li>
+      <li><code>CVTRA04Y</code> — Transaction category layout</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Tags</th></tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to request a transaction report for a custom date range so that I can review my spending.</td>
+        <td><span class="tag tag-blue">Report</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to receive a monthly statement in HTML format so that I have a formatted record.</td>
+        <td><span class="tag tag-green">Statement</span></td>
+      </tr>
+      <tr>
+        <td>Auditor</td>
+        <td>As an auditor, I want a detailed transaction report so that I can verify all account activity.</td>
+        <td><span class="tag tag-orange">Audit</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>Specify whether the story involves online request (<code>CORPT00C</code>) or is a batch-only story.</li>
+      <li>Date range stories must specify the <code>DATEPARM</code> file as the parameter mechanism.</li>
+      <li>Output format stories should distinguish between plain text (<code>STMTFILE</code>) and HTML (<code>HTMLFILE</code>) outputs.</li>
+      <li>Note that <code>CBSTM03A</code> uses mainframe control block addressing, ALTER/GO TO, and 2D arrays — technical debt to note in modernization stories.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>View transaction list on screen (online, no batch submission)</li>
+          <li>Add a new summary field to the transaction report</li>
+          <li>Change report header text in CBTRN03C</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Parameterized date range report submitted via CICS internal reader</li>
+          <li>Add account summary section to CBSTM03A statement output</li>
+          <li>Add new sort/grouping option to transaction report</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>PDF statement generation from CBSTM03A output</li>
+          <li>Email delivery integration via MQ for statement distribution</li>
+          <li>Multi-account consolidated report across all accounts for a customer</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>A valid start and end date are entered on the report request screen</td>
+        <td>CR00 is submitted</td>
+        <td>TRANREPT batch job is submitted via internal reader and completes successfully</td>
+      </tr>
+      <tr>
+        <td>Transactions exist in TRANSACT for the specified date range</td>
+        <td>CREASTMT (CBSTM03A) runs</td>
+        <td>All transactions appear in the statement with correct amounts and dates</td>
+      </tr>
+      <tr>
+        <td>No transactions exist in TRANSACT for the specified date range</td>
+        <td>TRANREPT batch job runs</td>
+        <td>An empty report with header and date range is generated (no blank output)</td>
+      </tr>
+      <tr>
+        <td>CREASTMT batch job runs successfully</td>
+        <td>Output files are examined</td>
+        <td>Both STMTFILE (plain text) and HTMLFILE (HTML) contain valid formatted statement</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>Submission mechanism:</strong> Report is submitted from CICS via the internal reader (JCL job submission); not run inline.</li>
+      <li><strong>Date filtering:</strong> <code>DATEPARM</code> sequential file controls the date range filter used by batch programs.</li>
+      <li><strong>Dual output:</strong> Statement is produced in two formats — plain text via <code>STMTFILE</code> and HTML via <code>HTMLFILE</code>.</li>
+      <li><strong>Technical note:</strong> <code>CBSTM03A</code> uses mainframe control block addressing, <code>ALTER</code>/<code>GO TO</code>, and 2D arrays — flag as a modernization candidate in technical debt stories.</li>
+      <li><strong>Statement subroutine:</strong> <code>CBSTM03B</code> is a formatting subroutine called by <code>CBSTM03A</code>; changes to statement format touch both programs.</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>
