@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Application - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f8f9fc; color:#0d1b2a; line-height:1.6; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; padding:24px; border-radius:12px; }
+        section { background:#fff; border-radius:12px; padding:20px; margin-top:20px; box-shadow:0 2px 8px rgba(15,23,42,.08); }
+        h2 { margin-top:0; }
+        ul { padding-left:20px; }
+        pre { background:#0f172a; color:#f8fafc; padding:12px; border-radius:8px; overflow:auto; }
+        footer { margin-top:24px; text-align:center; font-size:.9rem; color:#475569; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Core Application</h1>
+            <p>Guide for Developing User Stories</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Power the baseline CardDemo experience—sign-on, account/card lifecycle screens, transaction entry, bill payments, reports, and batch refreshes.</p>
+            <p><strong>Business Context:</strong> This module must stay reliable under modernization tests; every CICS screen (CC00/CM00/CT00/CAUP, etc.) hooks into VSAM/KSDS data that downstream MQ or DB2 modules consume.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account Management:</strong> As a <em>customer</em>, I want to view and edit the account record via <code>CAUP</code> so that my billing address stays current.</li>
+                <li><strong>Transaction Processing:</strong> As a <em>cardholder</em>, I want to submit a transaction through <code>CT02</code> so that it immediately writes to the daily transaction file.</li>
+                <li><strong>Reporting:</strong> As a <em>support analyst</em>, I want the <code>CREASTMT</code> job to generate statements so that I can email monthly summaries to customers.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Copybooks:</strong> Reuse <code>app/cpy/CVACT01Y.cpy</code> and <code>CVTRA06Y.cpy</code> for consistent record layouts.</li>
+                <li><strong>BMS Patterns:</strong> Extend existing map sets (e.g., <code>COACTUP</code>, <code>COTRN00</code>) to add new fields; the COBOL <code>SEND MAP</code> logic can remain intact.</li>
+                <li><strong>JCL Templates:</strong> Leverage jobs in <code>app/jcl/</code> for dataset refresh and combine steps (ACCTFILE → CARDFILE → TRANBKP).</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new display or validation field on an existing CICS map without changing persistence.</li>
+                <li><strong>Medium (3-5 pts):</strong> Hook a new field into the VSAM dataset, update copybooks, and adjust JCL copy steps.</li>
+                <li><strong>Complex (5-8 pts):</strong> Change transaction routing plus add an MQ call or DB2 sync so downstream modules see new data.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li><strong>CICS Transactions:</strong> <code>CC00</code>, <code>CM00</code>, <code>CT00</code>–<code>CT02</code>, <code>CAUP</code>, <code>CCUP</code>, <code>CB00</code>, <code>CR00</code>.</li>
+                <li><strong>Copybooks:</strong> VSAM structures defined in <code>app/cpy/</code> (account, card, transaction, user/security).</li>
+                <li><strong>BMS Maps:</strong> Layout definitions in <code>app/bms/</code> with map sets such as <code>COSGN00</code>, <code>COACTUP</code>, <code>COCRDLI</code>.</li>
+                <li><strong>Batch Jobs:</strong> JCL files in <code>app/jcl/</code> orchestrate dataset loads (ACCTFILE, CARDFILE, TRANBKP, CREASTMT).</li>
+            </ul>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li><strong>VSAM Datasets:</strong> <code>AWS.M2.CARDDEMO.USRSEC.PS</code>, <code>AWS.M2.CARDDEMO.ACCTDATA.PS</code>, <code>AWS.M2.CARDDEMO.DALYTRAN.PS</code>.</li>
+                <li><strong>RACF Security:</strong> User IDs (ADMIN001, USER0001) defined in <code>CSUSR01Y.cpy</code>.</li>
+                <li><strong>Scheduler/Control:</strong> Jobs in <code>app/scheduler/</code> and macros under <code>app/maclib/</code>.</li>
+            </ul>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CICS CC00 → COSGN00C (sign-on/menu navigation)
+CICS CAUP → COACTUPC (account updates)
+CICS CT00/CT01/CT02 → COTRN00C/COTRN01C/COTRN02C (transaction list/view/add)
+CICS CB00 → COBIL00C (bill payment)
+JCL ACCTFILE/CARDFILE/TRANBKP/CREASTMT → VSAM refresh and statement generation</code></pre>
+        </section>
+
+        <section class="acceptance">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>Given ADMIN001 is on <code>CA00</code>, when they update account address, then <code>AWS.M2.CARDDEMO.ACCTDATA.PS</code> reflects the new address and subsequent <code>CT02</code> entries respect the inactive flag.</li>
+                <li>Given a transaction is entered via <code>CT02</code>, when the job completes, then the same <code>TRANSACTION-ID</code> exists in <code>DALYTRAN-RECORD</code> and displays on <code>CT01</code>.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../index.html">← Back to Index</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
