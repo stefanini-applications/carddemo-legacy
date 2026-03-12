@@ -1,23 +1,792 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Extractions - User Story Development Guide</title>
+    <meta name="last-updated" content="2026-03-12T18:37:10Z">
+    <title>account-extractions - Module Documentation</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f0fdf4; color:#0f172a; line-height:1.6; }
-        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-        .header { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color:#fff; padding:24px; border-radius:12px; }
-        section { background:#fff; border-radius:12px; padding:20px; margin-top:20px; box-shadow:0 2px 8px rgba(15,23,42,.08); }
-        h2 { margin-top:0; }
-        ul { padding-left:20px; }
-        pre { background:#0f172a; color:#f8fafc; padding:12px; border-radius:8px; overflow:auto; }
-        footer { margin-top:24px; text-align:center; font-size:.9rem; color:#475569; }
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 { color: #4fc3f7; border-bottom: 2px solid #4fc3f7; padding-bottom: 10px; }
+        h2 { color: #81c784; margin-top: 30px; border-bottom: 1px solid #333; padding-bottom: 6px; }
+        h3 { color: #ffb74d; margin-top: 20px; }
+        h4 { color: #ce93d8; margin-top: 16px; }
+        code { background-color: #2d2d2d; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; color: #80cbc4; }
+        pre { background-color: #2d2d2d; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 3px solid #4fc3f7; }
+        pre code { background-color: transparent; padding: 0; color: #e0e0e0; }
+        a { color: #4fc3f7; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        nav { margin-bottom: 20px; padding: 10px; background: #2d2d2d; border-radius: 5px; }
+        .badge { display: inline-block; background: #1565c0; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-right: 6px; }
+        .badge-green { background: #2e7d32; }
+        .badge-orange { background: #e65100; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        th { background: #2d2d2d; color: #4fc3f7; padding: 10px 12px; text-align: left; border: 1px solid #444; }
+        td { padding: 9px 12px; border: 1px solid #333; vertical-align: top; }
+        tr:nth-child(even) { background-color: #222; }
+        .note { background: #1a2744; border-left: 4px solid #4fc3f7; padding: 12px 16px; margin: 16px 0; border-radius: 0 5px 5px 0; }
+        .warning { background: #2d1a00; border-left: 4px solid #ffb74d; padding: 12px 16px; margin: 16px 0; border-radius: 0 5px 5px 0; }
+        .section-card { background: #222; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #333; }
+        ul li, ol li { margin-bottom: 4px; }
+        .flow-step { display: flex; align-items: flex-start; margin: 8px 0; }
+        .flow-num { background: #4fc3f7; color: #1a1a1a; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85em; flex-shrink: 0; margin-right: 10px; margin-top: 2px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
+    <nav><a href="../../index.html">← Back to Index</a></nav>
+    <h1>account-extractions</h1>
+    <p>
+        <span class="badge">COBOL / CICS</span>
+        <span class="badge badge-green">IBM MQ</span>
+        <span class="badge badge-green">VSAM</span>
+        <span class="badge badge-orange">Optional Extension</span>
+    </p>
+
+    <h2>Overview</h2>
+    <div class="section-card">
+        <p>
+            The <strong>account-extractions</strong> module is an optional extension for the CardDemo
+            credit card management platform. It demonstrates a MQ-driven request/response pattern that
+            bridges asynchronous IBM MQ messaging with synchronous VSAM data access inside a CICS
+            environment.
+        </p>
+        <p>
+            Two COBOL programs — <code>CODATE01</code> (CICS transaction <code>CDRD</code>) and
+            <code>COACCT01</code> (CICS transaction <code>CDRA</code>) — act as MQ listeners.
+            Each program reads incoming messages from a named MQ request queue, processes the
+            request (either returning the current system date/time, or reading an account record
+            from VSAM), and puts a reply on the corresponding MQ response queue.
+        </p>
+        <p>
+            This module is located under <code>app/app-vsam-mq/</code> and is entirely independent of
+            the core CardDemo online menus. It is intended for cloud integration scenarios where
+            external clients (cloud services, data-lake pipelines, etc.) need to query mainframe
+            data asynchronously without direct 3270 terminal sessions.
+        </p>
+    </div>
+
+    <h2>Architectural Context</h2>
+    <div class="section-card">
+        <p>
+            The module sits at the MQ-bridge layer of the CardDemo architecture:
+        </p>
+        <pre><code>External Client / Cloud Service
+         │
+         │  PUT message to CARDDEMO.REQUEST.QUEUE
+         ▼
+   IBM MQ Queue Manager
+         │
+         │  CICS trigger fires CDRD or CDRA transaction
+         ▼
+   CICS Transaction Server
+         │
+         ├─► CODATE01 ──► CICS ASKTIME / FORMATTIME ──► reply queue CARD.DEMO.REPLY.DATE
+         │
+         └─► COACCT01 ──► CICS READ (ACCTDAT VSAM file) ──► reply queue CARD.DEMO.REPLY.ACCT
+                                    │
+                                    ▼
+                            VSAM KSDS (ACCTDAT)
+                            sourced from CVACT01Y copybook</code></pre>
+
+        <p>
+            Both programs share the same structural skeleton:
+        </p>
+        <ol>
+            <li>Open an <strong>error queue</strong> (<code>CARD.DEMO.ERROR</code>) for fault reporting.</li>
+            <li>Retrieve the triggering queue name from the CICS trigger mechanism (<code>EXEC CICS RETRIEVE INTO(MQTM)</code>).</li>
+            <li>Open the <strong>input queue</strong> (shared read, save-all-context).</li>
+            <li>Open the <strong>output reply queue</strong> (output, pass-all-context).</li>
+            <li>Loop: <code>MQGET</code> with a 5-second wait, process, <code>MQPUT</code> reply, <code>SYNCPOINT</code>.</li>
+            <li>Close all queues and return via <code>EXEC CICS RETURN</code>.</li>
+        </ol>
+
+        <div class="note">
+            <strong>Design note:</strong> The programs use <code>MQGMO-SYNCPOINT</code> and
+            <code>MQPMO-SYNCPOINT</code> so that each GET/PUT pair is unit-of-work protected.
+            CICS <code>SYNCPOINT</code> is issued at the top of the main loop to commit the
+            previous message before fetching the next one.
+        </div>
+    </div>
+
+    <h2>Directory Structure</h2>
+    <div class="section-card">
+        <pre><code>app/app-vsam-mq/
+├── README.md                  # Module overview and installation guide
+├── cbl/
+│   ├── CODATE01.cbl           # System date inquiry via MQ (CDRD transaction)
+│   └── COACCT01.cbl           # Account detail inquiry via MQ (CDRA transaction)
+└── csd/
+    └── CRDDEMOM.csd           # CICS resource definitions (PROGRAM + TRANSACTION)</code></pre>
+    </div>
+
+    <h2>Key Components</h2>
+
+    <h3>CODATE01 — System Date Inquiry (Transaction CDRD)</h3>
+    <div class="section-card">
+        <table>
+            <tr><th>Attribute</th><th>Value</th></tr>
+            <tr><td>Program ID</td><td><code>CODATE01</code></td></tr>
+            <tr><td>CICS Transaction</td><td><code>CDRD</code></td></tr>
+            <tr><td>Request function code</td><td>Any (no validation on function for date requests)</td></tr>
+            <tr><td>Input queue</td><td>Taken from CICS trigger data (<code>MQTM-QNAME</code>)</td></tr>
+            <tr><td>Reply queue</td><td><code>CARD.DEMO.REPLY.DATE</code> (hardcoded)</td></tr>
+            <tr><td>Error queue</td><td><code>CARD.DEMO.ERROR</code> (hardcoded)</td></tr>
+            <tr><td>Concurrency</td><td>QUASIRENT (single-threaded per CICS task)</td></tr>
+        </table>
+        <p>
+            <strong>Processing logic:</strong> When a message arrives, the program calls
+            <code>EXEC CICS ASKTIME</code> to obtain the current absolute time, then
+            <code>EXEC CICS FORMATTIME</code> to produce a <code>MM-DD-YYYY</code> date and
+            <code>HH:MM:SS</code> time string. The formatted values are concatenated into
+            the reply buffer before being put back onto the reply queue.
+        </p>
+        <pre><code>* CODATE01 — 4000-PROCESS-REQUEST-REPLY (excerpt)
+     EXEC CICS ASKTIME
+          ABSTIME (WS-ABS-TIME)
+     END-EXEC
+
+     EXEC CICS FORMATTIME
+          ABSTIME(WS-ABS-TIME)
+          MMDDYYYY(WS-MMDDYYYY)
+          DATESEP('-')
+          TIME(WS-TIME)
+          TIMESEP
+     END-EXEC
+
+     STRING  'SYSTEM DATE : ' WS-MMDDYYYY
+             'SYSTEM TIME : ' WS-TIME
+             DELIMITED BY SIZE
+             INTO REPLY-MESSAGE
+     END-STRING
+     PERFORM 4100-PUT-REPLY</code></pre>
+    </div>
+
+    <h3>COACCT01 — Account Detail Inquiry (Transaction CDRA)</h3>
+    <div class="section-card">
+        <table>
+            <tr><th>Attribute</th><th>Value</th></tr>
+            <tr><td>Program ID</td><td><code>COACCT01</code></td></tr>
+            <tr><td>CICS Transaction</td><td><code>CDRA</code></td></tr>
+            <tr><td>Request function code</td><td><code>INQA</code> (PIC X(4))</td></tr>
+            <tr><td>Input queue</td><td>Taken from CICS trigger data (<code>MQTM-QNAME</code>)</td></tr>
+            <tr><td>Reply queue</td><td><code>CARD.DEMO.REPLY.ACCT</code> (hardcoded)</td></tr>
+            <tr><td>Error queue</td><td><code>CARD.DEMO.ERROR</code> (hardcoded)</td></tr>
+            <tr><td>VSAM dataset</td><td><code>ACCTDAT</code> (CICS file name <code>ACCTDAT </code>)</td></tr>
+            <tr><td>Concurrency</td><td>QUASIRENT (single-threaded per CICS task)</td></tr>
+        </table>
+        <p>
+            <strong>Processing logic:</strong> The request message is parsed into
+            <code>REQUEST-MSG-COPY</code> which exposes <code>WS-FUNC</code> (4 chars) and
+            <code>WS-KEY</code> (11-digit account number). If <code>WS-FUNC = 'INQA'</code>
+            and <code>WS-KEY &gt; ZEROES</code>, a direct VSAM READ is issued against the
+            <code>ACCTDAT</code> dataset using the account ID as the record key. The account
+            fields from the <code>CVACT01Y</code> copybook are moved into a formatted
+            <code>WS-ACCT-RESPONSE</code> structure and put onto the reply queue.
+        </p>
+        <pre><code>* COACCT01 — 4000-PROCESS-REQUEST-REPLY (excerpt)
+     IF WS-FUNC = 'INQA' AND WS-KEY > ZEROES
+        MOVE WS-KEY TO WS-CARD-RID-ACCT-ID
+
+        EXEC CICS READ
+             DATASET   (LIT-ACCTFILENAME)      *&gt; 'ACCTDAT '
+             RIDFLD    (WS-CARD-RID-ACCT-ID-X)
+             KEYLENGTH (LENGTH OF WS-CARD-RID-ACCT-ID-X)
+             INTO      (ACCOUNT-RECORD)
+             LENGTH    (LENGTH OF ACCOUNT-RECORD)
+             RESP      (WS-RESP-CD)
+             RESP2     (WS-REAS-CD)
+        END-EXEC
+
+        EVALUATE WS-RESP-CD
+            WHEN DFHRESP(NORMAL)
+                 MOVE ACCT-ID               TO WS-ACCT-ID
+                 MOVE ACCT-ACTIVE-STATUS    TO WS-ACCT-ACTIVE-STATUS
+                 MOVE ACCT-CURR-BAL         TO WS-ACCT-CURR-BAL
+                 MOVE ACCT-CREDIT-LIMIT     TO WS-ACCT-CREDIT-LIMIT
+                 MOVE ACCT-CASH-CREDIT-LIMIT TO WS-ACCT-CASH-CREDIT-LIMIT
+                 MOVE ACCT-OPEN-DATE        TO WS-ACCT-OPEN-DATE
+                 MOVE ACCT-EXPIRAION-DATE   TO WS-ACCT-EXPIRAION-DATE
+                 MOVE ACCT-REISSUE-DATE     TO WS-ACCT-REISSUE-DATE
+                 MOVE ACCT-CURR-CYC-CREDIT  TO WS-ACCT-CURR-CYC-CREDIT
+                 MOVE ACCT-CURR-CYC-DEBIT   TO WS-ACCT-CURR-CYC-DEBIT
+                 MOVE ACCT-GROUP-ID         TO WS-ACCT-GROUP-ID
+                 MOVE WS-ACCT-RESPONSE      TO REPLY-MESSAGE
+                 PERFORM 4100-PUT-REPLY
+            WHEN DFHRESP(NOTFND)
+                 STRING 'INVALID REQUEST PARAMETERS '
+                        'ACCT ID : ' WS-KEY
+                        DELIMITED BY SIZE INTO REPLY-MESSAGE
+                 PERFORM 4100-PUT-REPLY
+        END-EVALUATE
+     END-IF</code></pre>
+    </div>
+
+    <h3>CRDDEMOM.csd — CICS Resource Definitions</h3>
+    <div class="section-card">
+        <p>
+            The CSD file defines all CICS resources for the module in the <code>CARDDEMO</code>
+            group. It is applied via <code>CEDA INSTALL GROUP(CARDDEMO)</code>.
+        </p>
+        <pre><code> DEFINE PROGRAM(COACCT01) GROUP(CARDDEMO)
+        RELOAD(NO) RESIDENT(NO) USAGE(NORMAL)
+        STATUS(ENABLED) CEDF(YES) DATALOCATION(ANY) EXECKEY(USER)
+        CONCURRENCY(QUASIRENT) API(CICSAPI) DYNAMIC(NO) TRANSID(CDRA)
+
+ DEFINE PROGRAM(CODATE01) GROUP(CARDDEMO)
+        STATUS(ENABLED) CEDF(YES) DATALOCATION(ANY) EXECKEY(USER)
+        CONCURRENCY(QUASIRENT) API(CICSAPI) DYNAMIC(NO) TRANSID(CDRD)
+
+ DEFINE TRANSACTION(CDRA) GROUP(CARDDEMO)
+        PROGRAM(COACCT01) TWASIZE(0) PROFILE(DFHCICST) STATUS(ENABLED)
+        TASKDATALOC(ANY) TASKDATAKEY(USER) PRIORITY(1) ISOLATE(YES)
+        SPURGE(YES) TPURGE(YES) DUMP(YES) TRACE(YES) ACTION(BACKOUT)
+
+ DEFINE TRANSACTION(CDRD) GROUP(CARDDEMO)
+        PROGRAM(CODATE01) TWASIZE(0) PROFILE(DFHCICST) STATUS(ENABLED)
+        TASKDATALOC(ANY) TASKDATAKEY(USER) PRIORITY(1) ISOLATE(YES)
+        SPURGE(YES) TPURGE(YES) DUMP(YES) TRACE(YES) ACTION(BACKOUT)
+
+ DEFINE LIBRARY(CARDDLIB) GROUP(CARDDEMO)
+        RANKING(50) CRITICAL(NO) STATUS(ENABLED)
+        DSNAME01(AWS.M2.CARDDEMO.LOADLIB)</code></pre>
+    </div>
+
+    <h2>Public APIs</h2>
+
+    <h3>MQ Request/Response Protocol</h3>
+    <div class="section-card">
+        <p>
+            Both programs use the same request buffer layout. A caller places a 1000-byte message
+            on the configured input queue. The program reads the first 15 bytes to determine the
+            function and the key, then replies on the corresponding reply queue.
+        </p>
+
+        <h4>Request Message Layout (shared, 1000 bytes)</h4>
+        <pre><code>01 REQUEST-MSG-COPY.
+   10 WS-FUNC        PIC X(04).   *&gt; 'DATE' | 'INQA' | other
+   10 WS-KEY         PIC 9(11).   *&gt; Account number (11 digits); 0 for date requests
+   10 WS-FILLER      PIC X(985).  *&gt; Reserved / padding</code></pre>
+
+        <h4>Date Request (CDRD / CODATE01)</h4>
+        <table>
+            <tr><th>Field</th><th>Offset</th><th>Length</th><th>Value</th></tr>
+            <tr><td>WS-FUNC</td><td>0</td><td>4</td><td>Any value (not validated for date)</td></tr>
+            <tr><td>WS-KEY</td><td>4</td><td>11</td><td>0 or blank</td></tr>
+            <tr><td>Padding</td><td>15</td><td>985</td><td>Spaces</td></tr>
+        </table>
+        <p><strong>Reply queue:</strong> <code>CARD.DEMO.REPLY.DATE</code></p>
+        <p><strong>Reply format (plain text in 1000-byte buffer):</strong></p>
+        <pre><code>SYSTEM DATE : MM-DD-YYYYSYSTEM TIME : HH:MM:SS</code></pre>
+
+        <h4>Account Inquiry Request (CDRA / COACCT01)</h4>
+        <table>
+            <tr><th>Field</th><th>Offset</th><th>Length</th><th>Value</th></tr>
+            <tr><td>WS-FUNC</td><td>0</td><td>4</td><td><code>INQA</code></td></tr>
+            <tr><td>WS-KEY</td><td>4</td><td>11</td><td>Account number (numeric, &gt; 0)</td></tr>
+            <tr><td>Padding</td><td>15</td><td>985</td><td>Spaces</td></tr>
+        </table>
+        <p><strong>Reply queue:</strong> <code>CARD.DEMO.REPLY.ACCT</code></p>
+        <p><strong>Reply format (plain text in 1000-byte buffer, successful lookup):</strong></p>
+        <pre><code>ACCOUNT ID : 00000000001ACCOUNT STATUS : ABALANCE : +0000000000.00CREDIT LIMIT : +0000000000.00
+CASH LIMIT : +0000000000.00OPEN DATE : YYYY-MM-DDEXPR DATE : YYYY-MM-DDREIS DATE : YYYY-MM-DD
+CREDIT BAL : +0000000000.00DEBIT BAL : +0000000000.00GROUP ID : GRPID00001</code></pre>
+        <p><strong>Reply format (account not found):</strong></p>
+        <pre><code>INVALID REQUEST PARAMETERS ACCT ID : 00000000001</code></pre>
+        <p><strong>Reply format (invalid function / zero key):</strong></p>
+        <pre><code>INVALID REQUEST PARAMETERS ACCT ID : 00000000000FUNCTION : XXXX</code></pre>
+
+        <h4>Error Queue</h4>
+        <p>
+            Both programs write diagnostic messages to <code>CARD.DEMO.ERROR</code> when
+            MQ API calls fail. The error message format is:
+        </p>
+        <pre><code>01 MQ-ERR-DISPLAY.
+   05 MQ-ERROR-PARA            PIC X(25).  *&gt; e.g. 'INP MQOPEN ERR'
+   05 FILLER                   PIC X(02).
+   05 MQ-APPL-RETURN-MESSAGE   PIC X(25).  *&gt; RESP codes or description
+   05 FILLER                   PIC X(02).
+   05 MQ-APPL-CONDITION-CODE   PIC 9(02).  *&gt; MQCC value
+   05 FILLER                   PIC X(02).
+   05 MQ-APPL-REASON-CODE      PIC 9(05).  *&gt; MQRC value
+   05 FILLER                   PIC X(02).
+   05 MQ-APPL-QUEUE-NAME       PIC X(48).  *&gt; Queue that caused error</code></pre>
+    </div>
+
+    <h3>CICS Transactions</h3>
+    <div class="section-card">
+        <table>
+            <tr><th>Transaction</th><th>Program</th><th>Trigger mechanism</th><th>Purpose</th></tr>
+            <tr>
+                <td><code>CDRD</code></td>
+                <td><code>CODATE01</code></td>
+                <td>MQ trigger on <code>CARDDEMO.REQUEST.QUEUE</code></td>
+                <td>System date/time inquiry via MQ</td>
+            </tr>
+            <tr>
+                <td><code>CDRA</code></td>
+                <td><code>COACCT01</code></td>
+                <td>MQ trigger on <code>CARDDEMO.REQUEST.QUEUE</code></td>
+                <td>Account detail lookup via MQ + VSAM</td>
+            </tr>
+        </table>
+        <div class="note">
+            Both transactions use <code>ACTION(BACKOUT)</code> in their CICS definitions,
+            ensuring that any in-flight unit-of-work is backed out on abnormal termination.
+        </div>
+    </div>
+
+    <h2>Data Models</h2>
+
+    <h3>Account Record — CVACT01Y Copybook</h3>
+    <div class="section-card">
+        <p>
+            <code>COACCT01</code> copies the <code>CVACT01Y</code> copybook to define the
+            <code>ACCOUNT-RECORD</code> structure used in the VSAM read.
+        </p>
+        <pre><code>01 ACCOUNT-RECORD.
+   05 ACCT-ID                       PIC 9(11).
+   05 ACCT-ACTIVE-STATUS            PIC X(01).   *&gt; 'A' = active
+   05 ACCT-CURR-BAL                 PIC S9(10)V99.
+   05 ACCT-CREDIT-LIMIT             PIC S9(10)V99.
+   05 ACCT-CASH-CREDIT-LIMIT        PIC S9(10)V99.
+   05 ACCT-OPEN-DATE                PIC X(10).   *&gt; YYYY-MM-DD
+   05 ACCT-EXPIRAION-DATE           PIC X(10).
+   05 ACCT-REISSUE-DATE             PIC X(10).
+   05 ACCT-CURR-CYC-CREDIT          PIC S9(10)V99.
+   05 ACCT-CURR-CYC-DEBIT           PIC S9(10)V99.
+   05 ACCT-GROUP-ID                 PIC X(10).
+   05 ACCT-ADDR-ZIP                 PIC X(10).
+   ...</code></pre>
+
+        <h4>WS-ACCT-RESPONSE — formatted reply structure (COACCT01)</h4>
+        <pre><code>01 WS-ACCT-RESPONSE.
+   05 WS-ACCT-LBL               PIC X(13) VALUE 'ACCOUNT ID : '.
+   05 WS-ACCT-ID                PIC 9(11).
+   05 WS-STATUS-LBL             PIC X(17) VALUE 'ACCOUNT STATUS : '.
+   05 WS-ACCT-ACTIVE-STATUS     PIC X(01).
+   05 WS-CURR-BAL-LBL           PIC X(10) VALUE 'BALANCE : '.
+   05 WS-ACCT-CURR-BAL          PIC S9(10)V99.
+   05 WS-CRDT-LMT-LBL           PIC X(15) VALUE 'CREDIT LIMIT : '.
+   05 WS-ACCT-CREDIT-LIMIT      PIC S9(10)V99.
+   05 WS-CASH-LIMIT-LBL         PIC X(13) VALUE 'CASH LIMIT : '.
+   05 WS-ACCT-CASH-CREDIT-LIMIT PIC S9(10)V99.
+   05 WS-OPEN-DATE-LBL          PIC X(12) VALUE 'OPEN DATE : '.
+   05 WS-ACCT-OPEN-DATE         PIC X(10).
+   05 WS-EXPR-DATE-LBL          PIC X(12) VALUE 'EXPR DATE : '.
+   05 WS-ACCT-EXPIRAION-DATE    PIC X(10).
+   05 WS-REISSUE-DT-LBL         PIC X(12) VALUE 'REIS DATE : '.
+   05 WS-ACCT-REISSUE-DATE      PIC X(10).
+   05 WS-CURR-CYC-CREDIT-LBL    PIC X(13) VALUE 'CREDIT BAL : '.
+   05 WS-ACCT-CURR-CYC-CREDIT   PIC S9(10)V99.
+   05 WS-CURR-CYC-DEBIT-LBL     PIC X(12) VALUE 'DEBIT BAL : '.
+   05 WS-ACCT-CURR-CYC-DEBIT    PIC S9(10)V99.
+   05 WS-ACCT-GRP-LBL           PIC X(11) VALUE 'GROUP ID : '.
+   05 WS-ACCT-GROUP-ID          PIC X(10).</code></pre>
+    </div>
+
+    <h3>MQ Internal Structures</h3>
+    <div class="section-card">
+        <p>Both programs use standard IBM MQ COBOL copybooks:</p>
+        <table>
+            <tr><th>Copybook</th><th>Purpose</th><th>Working-storage level</th></tr>
+            <tr><td><code>CMQGMOV</code></td><td>MQ Get Message Options (MQGMO)</td><td><code>MQ-GET-MESSAGE-OPTIONS</code></td></tr>
+            <tr><td><code>CMQPMOV</code></td><td>MQ Put Message Options (MQPMO)</td><td><code>MQ-PUT-MESSAGE-OPTIONS</code></td></tr>
+            <tr><td><code>CMQMDV</code></td><td>MQ Message Descriptor (MQMD)</td><td><code>MQ-MESSAGE-DESCRIPTOR</code></td></tr>
+            <tr><td><code>CMQODV</code></td><td>MQ Object Descriptor (MQOD)</td><td><code>MQ-OBJECT-DESCRIPTOR</code></td></tr>
+            <tr><td><code>CMQV</code></td><td>MQ Constants</td><td><code>MQ-CONSTANTS</code></td></tr>
+            <tr><td><code>CMQTML</code></td><td>MQ Trigger Message (MQTM)</td><td><code>MQ-GET-QUEUE-MESSAGE</code></td></tr>
+        </table>
+    </div>
+
+    <h2>Business Rules</h2>
+    <div class="section-card">
+        <ol>
+            <li>
+                <strong>Function code validation (COACCT01 only):</strong>
+                The request is only processed if <code>WS-FUNC = 'INQA'</code> AND
+                <code>WS-KEY &gt; ZEROES</code>. Any other combination returns an
+                <em>INVALID REQUEST PARAMETERS</em> error reply rather than raising an
+                exception.
+            </li>
+            <li>
+                <strong>VSAM key lookup:</strong>
+                The account ID from the request is used as a direct VSAM RIDFLD key.
+                A <code>DFHRESP(NOTFND)</code> response is reported gracefully in the
+                MQ reply; other VSAM errors route to the error queue and terminate.
+            </li>
+            <li>
+                <strong>MQ wait interval:</strong>
+                Both programs set <code>MQGMO-WAITINTERVAL = 5000</code> (5 seconds).
+                If no message arrives in that window, <code>MQRC-NO-MSG-AVAILABLE</code>
+                causes the loop to exit gracefully via <code>NO-MORE-MSGS</code>.
+            </li>
+            <li>
+                <strong>Correlation / reply-to:</strong>
+                The program captures <code>MQMD-MSGID</code>, <code>MQMD-CORRELID</code>,
+                and <code>MQMD-REPLYTOQ</code> from the inbound message descriptor.
+                These are preserved in <code>SAVE-MSGID</code>, <code>SAVE-CORELID</code>,
+                <code>SAVE-REPLY2Q</code> and propagated to the outbound <code>MQMD</code>
+                so the caller can correlate responses.
+            </li>
+            <li>
+                <strong>Syncpoint discipline:</strong>
+                A CICS <code>SYNCPOINT</code> is issued at the start of each loop
+                iteration (<code>4000-MAIN-PROCESS</code>) to commit the prior
+                GET+PUT pair before the next message is dequeued, preventing duplicate
+                processing on restart.
+            </li>
+            <li>
+                <strong>Error routing:</strong>
+                MQ API failures (<code>MQOPEN</code>, <code>MQGET</code>, <code>MQPUT</code>)
+                are written to <code>CARD.DEMO.ERROR</code> and cause immediate program
+                termination. VSAM errors other than NOTFND also route to the error queue.
+            </li>
+            <li>
+                <strong>Date format:</strong>
+                Dates returned by CODATE01 use <code>MM-DD-YYYY</code> format with
+                <code>DATESEP('-')</code> and times use <code>HH:MM:SS</code> with the
+                default CICS time separator.
+            </li>
+        </ol>
+    </div>
+
+    <h2>Dependencies</h2>
+
+    <h3>Internal Dependencies</h3>
+    <div class="section-card">
+        <table>
+            <tr><th>Dependency</th><th>Type</th><th>Purpose</th></tr>
+            <tr>
+                <td>Base CardDemo application</td>
+                <td>Runtime prerequisite</td>
+                <td>VSAM <code>ACCTDAT</code> dataset must be loaded and defined in CICS</td>
+            </tr>
+            <tr>
+                <td><code>app/cpy/CVACT01Y.cpy</code></td>
+                <td>COBOL copybook</td>
+                <td>Account record layout used by <code>COACCT01</code></td>
+            </tr>
+            <tr>
+                <td>CICS Transaction Server</td>
+                <td>Runtime platform</td>
+                <td>Executes both programs; provides MQ bridge, ASKTIME, FORMATTIME</td>
+            </tr>
+        </table>
+    </div>
+
+    <h3>External Dependencies</h3>
+    <div class="section-card">
+        <table>
+            <tr><th>Dependency</th><th>Version</th><th>Purpose</th></tr>
+            <tr>
+                <td>IBM MQ</td>
+                <td>Any MQ version supported by CICS TS 6.3+</td>
+                <td>Queue manager providing <code>CARDDEMO.REQUEST.QUEUE</code>,
+                    <code>CARD.DEMO.REPLY.DATE</code>, <code>CARD.DEMO.REPLY.ACCT</code>,
+                    <code>CARD.DEMO.ERROR</code></td>
+            </tr>
+            <tr>
+                <td>IBM MQ COBOL copybooks (<code>CMQGMOV</code>, <code>CMQMDV</code>, etc.)</td>
+                <td>Supplied with IBM MQ</td>
+                <td>Data structures for MQ API calls (<code>MQOPEN</code>, <code>MQGET</code>,
+                    <code>MQPUT</code>, <code>MQCLOSE</code>)</td>
+            </tr>
+            <tr>
+                <td>RACF</td>
+                <td>z/OS security subsystem</td>
+                <td>Controls which CICS tasks may access MQ queues and VSAM datasets</td>
+            </tr>
+        </table>
+    </div>
+
+    <h2>Configuration and Environment</h2>
+    <div class="section-card">
+
+        <h3>Required MQ Queues</h3>
+        <pre><code>* Create the queues on the MQ queue manager before installing the CSD group
+DEFINE QLOCAL('CARDDEMO.REQUEST.QUEUE')  REPLACE
+DEFINE QLOCAL('CARD.DEMO.REPLY.DATE')    REPLACE
+DEFINE QLOCAL('CARD.DEMO.REPLY.ACCT')    REPLACE
+DEFINE QLOCAL('CARD.DEMO.ERROR')         REPLACE</code></pre>
+
+        <h3>Required CICS Resources</h3>
+        <pre><code>* Load programs into LOADLIB, then install the CSD group
+CEDA INSTALL GROUP(CARDDEMO)
+
+* Or define individually:
+DEFINE TRANSACTION(CDRD) GROUP(CARDDEMO) PROGRAM(CODATE01)
+DEFINE TRANSACTION(CDRA) GROUP(CARDDEMO) PROGRAM(COACCT01)
+DEFINE MQCONN(MQ01) GROUP(CARDDEMO)
+DEFINE MQQUEUE(CARDREQ) GROUP(CARDDEMO) QNAME(CARDDEMO.REQUEST.QUEUE)
+DEFINE MQQUEUE(CARDRES) GROUP(CARDDEMO) QNAME(CARD.DEMO.REPLY.ACCT)</code></pre>
+
+        <h3>VSAM Dataset</h3>
+        <pre><code>* CICS file definition for account data
+DEFINE FILE(ACCTDAT) GROUP(CARDDEMO)
+       DSNAME(AWS.M2.CARDDEMO.ACCTDAT)
+       STRINGS(10) STATUS(ENABLED) OPENTIME(STARTUP)
+       RECORDSIZE(NOLIMIT) KEYLENGTH(11)</code></pre>
+
+        <h3>Load Library</h3>
+        <p>Compiled load modules are expected in <code>AWS.M2.CARDDEMO.LOADLIB</code>
+           as defined in the <code>CARDDLIB</code> CICS library resource.</p>
+
+        <h3>Key Hardcoded Values</h3>
+        <table>
+            <tr><th>Program</th><th>Field</th><th>Value</th><th>Notes</th></tr>
+            <tr><td><code>CODATE01</code></td><td>Reply queue</td><td><code>CARD.DEMO.REPLY.DATE</code></td><td>Hardcoded in procedure division</td></tr>
+            <tr><td><code>COACCT01</code></td><td>Reply queue</td><td><code>CARD.DEMO.REPLY.ACCT</code></td><td>Hardcoded in procedure division</td></tr>
+            <tr><td>Both</td><td>Error queue</td><td><code>CARD.DEMO.ERROR</code></td><td>Hardcoded in 2100-OPEN-ERROR-QUEUE</td></tr>
+            <tr><td>Both</td><td>MQGET wait</td><td>5000 ms</td><td><code>MQGMO-WAITINTERVAL</code></td></tr>
+            <tr><td>Both</td><td>Buffer size</td><td>1000 bytes</td><td><code>MQ-BUFFER-LENGTH</code></td></tr>
+            <tr><td><code>COACCT01</code></td><td>VSAM file name</td><td><code>ACCTDAT </code> (8 chars)</td><td><code>LIT-ACCTFILENAME</code></td></tr>
+        </table>
+
+        <div class="warning">
+            <strong>Important:</strong> Reply queue names and error queue names are hardcoded in
+            the COBOL source. Changes to MQ topology require source edits and recompilation.
+        </div>
+    </div>
+
+    <h2>Processing Flow Diagrams</h2>
+
+    <h3>CODATE01 End-to-End Flow</h3>
+    <div class="section-card">
+        <pre><code>Client
+  │
+  ├─ 1. PUT message to CARDDEMO.REQUEST.QUEUE (any content, REPLYTOQ set)
+  │
+MQ Trigger Monitor
+  │
+  ├─ 2. Trigger fires CICS transaction CDRD
+  │
+CODATE01 (1000-CONTROL)
+  │
+  ├─ 3. Open CARD.DEMO.ERROR queue (error sink)
+  ├─ 4. EXEC CICS RETRIEVE → get input queue name from trigger message
+  ├─ 5. Set reply queue = 'CARD.DEMO.REPLY.DATE'
+  ├─ 6. MQOPEN input queue  (MQOO-INPUT-SHARED + MQOO-SAVE-ALL-CONTEXT)
+  ├─ 7. MQOPEN output queue (MQOO-OUTPUT + MQOO-PASS-ALL-CONTEXT)
+  │
+  └─ Loop (4000-MAIN-PROCESS):
+       ├─ 8. EXEC CICS SYNCPOINT  (commit previous UoW)
+       ├─ 9. MQGET with 5-second wait
+       │      ├─ if MQCC-OK → save MSG-ID, CORRELID, REPLYTOQ
+       │      │                PERFORM 4000-PROCESS-REQUEST-REPLY
+       │      │                   ├─ ASKTIME → WS-ABS-TIME
+       │      │                   ├─ FORMATTIME → WS-MMDDYYYY, WS-TIME
+       │      │                   ├─ STRING reply text into REPLY-MESSAGE
+       │      │                   └─ PERFORM 4100-PUT-REPLY → MQPUT to output queue
+       │      └─ if MQRC-NO-MSG-AVAILABLE → SET NO-MORE-MSGS TO TRUE → exit loop
+       │
+  ├─ 10. Close input, output, error queues
+  └─ 11. EXEC CICS RETURN</code></pre>
+    </div>
+
+    <h3>COACCT01 End-to-End Flow</h3>
+    <div class="section-card">
+        <pre><code>Client
+  │
+  ├─ 1. PUT message: WS-FUNC='INQA' || WS-KEY=&lt;11-digit acct&gt; || spaces(985)
+  │      to CARDDEMO.REQUEST.QUEUE
+  │
+MQ Trigger Monitor
+  │
+  ├─ 2. Trigger fires CICS transaction CDRA
+  │
+COACCT01 (1000-CONTROL)
+  │
+  ├─ 3–7. Same queue open sequence as CODATE01 (reply queue = CARD.DEMO.REPLY.ACCT)
+  │
+  └─ Loop (4000-MAIN-PROCESS):
+       ├─ SYNCPOINT
+       ├─ MQGET
+       │      └─ PERFORM 4000-PROCESS-REQUEST-REPLY
+       │              ├─ Parse WS-FUNC, WS-KEY from REQUEST-MSG-COPY
+       │              ├─ IF WS-FUNC='INQA' AND WS-KEY > 0:
+       │              │     EXEC CICS READ DATASET(ACCTDAT) RIDFLD(WS-KEY)
+       │              │       ├─ DFHRESP(NORMAL): populate WS-ACCT-RESPONSE → MQPUT reply
+       │              │       ├─ DFHRESP(NOTFND): "INVALID REQUEST PARAMETERS" → MQPUT reply
+       │              │       └─ OTHER: PERFORM 9000-ERROR → PERFORM 8000-TERMINATION
+       │              └─ ELSE: "INVALID REQUEST PARAMETERS FUNCTION:xxxx" → MQPUT reply
+       │
+  └─ Close queues → CICS RETURN</code></pre>
+    </div>
+
+    <h2>Installation Guide</h2>
+    <div class="section-card">
+        <ol>
+            <li>
+                <strong>Verify prerequisites:</strong>
+                Ensure the base CardDemo application is installed, VSAM datasets are loaded,
+                and CICS is running with MQ support enabled.
+            </li>
+            <li>
+                <strong>Create MQ queues:</strong>
+                <pre><code>DEFINE QLOCAL('CARDDEMO.REQUEST.QUEUE') REPLACE
+DEFINE QLOCAL('CARD.DEMO.REPLY.DATE')   REPLACE
+DEFINE QLOCAL('CARD.DEMO.REPLY.ACCT')   REPLACE
+DEFINE QLOCAL('CARD.DEMO.ERROR')        REPLACE</code></pre>
+            </li>
+            <li>
+                <strong>Compile COBOL programs</strong> with the IBM MQ copybook library
+                in the SYSLIB concatenation:
+                <pre><code>// EXEC IGYWCL
+//SYSIN DD DSN=AWS.M2.CARDDEMO.SOURCE(CODATE01),DISP=SHR
+//SYSLIB DD DSN=MQ.SLIB,DISP=SHR
+//        DD DSN=AWS.M2.CARDDEMO.COPYLIB,DISP=SHR</code></pre>
+            </li>
+            <li>
+                <strong>Link-edit</strong> with <code>CSQBSTUB</code> (MQ CICS stub):
+                <pre><code>//LKED.SYSIN DD *
+  INCLUDE MQLIB(CSQBSTUB)
+  NAME CODATE01(R)</code></pre>
+            </li>
+            <li>
+                <strong>Install CICS resources</strong> from the provided CSD file:
+                <pre><code>CEDA INSTALL GROUP(CARDDEMO)</code></pre>
+            </li>
+            <li>
+                <strong>Configure CICS-MQ connection:</strong>
+                <pre><code>DEFINE MQCONN(MQ01)   GROUP(CARDDEMO)
+DEFINE MQQUEUE(CARDREQ) GROUP(CARDDEMO) QNAME(CARDDEMO.REQUEST.QUEUE)</code></pre>
+            </li>
+        </ol>
+    </div>
+
+    <h2>Testing and Usage Examples</h2>
+
+    <h3>Testing System Date Inquiry (CDRD)</h3>
+    <div class="section-card">
+        <p>Send a minimal 15-byte (or padded to 1000-byte) message to the request queue.
+           The function code is not validated by CODATE01 — any value works.</p>
+        <pre><code>* COBOL snippet for a test client
+     MOVE 'DATE'       TO WS-FUNC
+     MOVE ZEROES       TO WS-KEY
+     MOVE SPACES       TO WS-FILLER
+     MOVE REQUEST-MSG-COPY TO MQ-BUFFER
+     MOVE 1000          TO MQ-BUFFER-LENGTH
+     MOVE 'CARD.DEMO.REPLY.DATE' TO MQMD-REPLYTOQ
+     CALL 'MQPUT' USING ... MQ-BUFFER ...
+
+* Expected reply on CARD.DEMO.REPLY.DATE:
+     "SYSTEM DATE : 03-12-2026SYSTEM TIME : 18:37:10"</code></pre>
+    </div>
+
+    <h3>Testing Account Inquiry (CDRA)</h3>
+    <div class="section-card">
+        <pre><code>* COBOL snippet: query account 00000000001
+     MOVE 'INQA'       TO WS-FUNC
+     MOVE 1            TO WS-KEY      *&gt; account ID = 1
+     MOVE SPACES       TO WS-FILLER
+     MOVE REQUEST-MSG-COPY TO MQ-BUFFER
+     MOVE 1000          TO MQ-BUFFER-LENGTH
+     MOVE 'CARD.DEMO.REPLY.ACCT' TO MQMD-REPLYTOQ
+     CALL 'MQPUT' USING ... MQ-BUFFER ...
+
+* Expected successful reply on CARD.DEMO.REPLY.ACCT:
+     "ACCOUNT ID : 00000000001ACCOUNT STATUS : A..."
+
+* Expected reply for unknown account:
+     "INVALID REQUEST PARAMETERS ACCT ID : 00000000099"</code></pre>
+    </div>
+
+    <h3>Verifying Error Queue</h3>
+    <div class="section-card">
+        <p>Browse <code>CARD.DEMO.ERROR</code> to diagnose failures.
+           Each error message includes the failing operation name, MQ condition code,
+           MQ reason code, and the queue name involved.</p>
+        <pre><code>* Error message example (MQOPEN failed on input queue):
+"INP MQOPEN ERR         RESP: ...  CC=02 RC=02035 QUEUE=CARDDEMO.REQUEST.QUEUE"</code></pre>
+    </div>
+
+    <h2>Development Guidelines</h2>
+    <div class="section-card">
+        <h3>Adding a New Request Type</h3>
+        <ol>
+            <li>Add a new <code>88</code> level or <code>EVALUATE</code> branch in
+                <code>4000-PROCESS-REQUEST-REPLY</code> for the new function code.</li>
+            <li>Populate <code>REPLY-MESSAGE</code> with the response text.</li>
+            <li>Call <code>PERFORM 4100-PUT-REPLY</code>.</li>
+            <li>If the new type requires a different reply queue, parameterize the reply queue
+                name rather than hardcoding it.</li>
+        </ol>
+
+        <h3>Changing Queue Names</h3>
+        <p>
+            Reply and error queue names are hardcoded constants in the PROCEDURE DIVISION.
+            To change them, update the <code>MOVE '...' TO REPLY-QUEUE-NAME</code> and
+            <code>MOVE '...' TO ERROR-QUEUE-NAME</code> statements, then recompile.
+            Consider externalizing these as CICS DEFINE PROGRAM attributes or a
+            configuration record in the future.
+        </p>
+
+        <h3>Performance Considerations</h3>
+        <ul>
+            <li>The 5-second <code>MQGMO-WAITINTERVAL</code> means a quiet queue will hold
+                a CICS task for up to 5 seconds before exiting. Tune this value based on
+                expected message rates.</li>
+            <li>The MQ buffer is fixed at 1000 bytes. Account response payloads are well
+                under this limit; no dynamic allocation is needed.</li>
+            <li>Target MQ round-trip: &lt; 1 second under normal load (per system performance
+                budgets).</li>
+        </ul>
+
+        <h3>Error Handling Patterns</h3>
+        <ul>
+            <li>MQ failures immediately route to <code>9000-ERROR</code> (writes to error queue)
+                then <code>8000-TERMINATION</code> (closes queues, issues CICS RETURN).</li>
+            <li>VSAM NOTFND is handled gracefully — a plain-text error is returned to the
+                caller rather than causing program termination.</li>
+            <li>Do not add <code>DISPLAY</code> statements for production — they route to the
+                CICS system log. Use the error queue pattern instead.</li>
+        </ul>
+    </div>
+
+    <h2>User Story Patterns</h2>
+    <div class="section-card">
+        <table>
+            <tr><th>Persona</th><th>Story</th><th>Acceptance Criteria</th></tr>
+            <tr>
+                <td>Cloud integration tester</td>
+                <td>I want to send a <code>DATE</code> payload to <code>CARDDEMO.REQUEST.QUEUE</code>
+                    and receive the system date so downstream services can synchronize clocks.</td>
+                <td>Reply on <code>CARD.DEMO.REPLY.DATE</code> contains
+                    <code>SYSTEM DATE : MM-DD-YYYY</code> and <code>SYSTEM TIME : HH:MM:SS</code>
+                    within 1 second.</td>
+            </tr>
+            <tr>
+                <td>Data extraction architect</td>
+                <td>I need <code>INQA</code> requests to return account balances and statuses
+                    derived from <code>CVACT01Y</code> fields.</td>
+                <td>Reply on <code>CARD.DEMO.REPLY.ACCT</code> includes
+                    <code>ACCOUNT ID</code>, <code>ACCOUNT STATUS</code>, <code>BALANCE</code>,
+                    <code>CREDIT LIMIT</code>, and date fields; account not found returns
+                    <code>INVALID REQUEST PARAMETERS</code>.</td>
+            </tr>
+            <tr>
+                <td>Integration engineer</td>
+                <td>I want MQ operation failures to be captured in <code>CARD.DEMO.ERROR</code>
+                    with MQCC and MQRC codes so I can diagnose queue configuration issues.</td>
+                <td>Error queue message includes queue name, condition code, and reason code
+                    matching IBM MQ reference documentation.</td>
+            </tr>
+        </table>
+    </div>
+
+    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #444; color: #888; font-size: 0.85em;">
+        Last reviewed: 2026-03-12T18:37:10Z
+    </footer>
+</body>
+</html>
             <h1>📦 Account Extractions</h1>
             <p>Guide for Developing User Stories</p>
         </header>

@@ -75,14 +75,40 @@
 
 ### 4. Account Extractions
 **ID:** `account-extractions`  
-**Purpose:** Showcase MQ-driven account inquiries (system date and account detail) that integrate VSAM data with asynchronous messaging.  
-**Key Components:** `app/app-vsam-mq/` COBOL (`CODATE01`, `COACCT01`), MQ definitions (`CARDDEMO.REQUEST.QUEUE`, `CARDDEMO.RESPONSE.QUEUE`), CICS transactions `CDRD`/`CDRA`, VSAM lookup copybooks.  
-**Public APIs:**  
-- MQ request/response pairs: `DATE` and `ACCT` payloads (structures described in the module README) with correlation IDs.  
-- `CICS CDRD/CDRA` transactions that kick off MQ requests and display responses via BMS screens.  
+**Purpose:** Showcase MQ-driven account inquiries (system date and account detail) that integrate VSAM data with asynchronous messaging. The module acts as an MQ-to-VSAM bridge enabling external cloud or batch clients to query mainframe data without direct 3270 sessions.  
+**Key Components:**
+- `app/app-vsam-mq/cbl/CODATE01.cbl` — CICS program (transaction `CDRD`) that listens on the MQ request queue and replies with the current system date/time obtained via `EXEC CICS ASKTIME`/`FORMATTIME`.
+- `app/app-vsam-mq/cbl/COACCT01.cbl` — CICS program (transaction `CDRA`) that listens on the MQ request queue and replies with account details read directly from the `ACCTDAT` VSAM KSDS file using the `CVACT01Y` copybook layout.
+- `app/app-vsam-mq/csd/CRDDEMOM.csd` — CICS resource definitions (PROGRAM, TRANSACTION, LIBRARY) for the `CARDDEMO` CSD group.
+- MQ queues: `CARDDEMO.REQUEST.QUEUE` (inbound), `CARD.DEMO.REPLY.DATE` / `CARD.DEMO.REPLY.ACCT` (reply), `CARD.DEMO.ERROR` (faults).
+
+**Public APIs:**
+- **MQ Date Request:** 1000-byte message with any function code → reply on `CARD.DEMO.REPLY.DATE` containing `SYSTEM DATE : MM-DD-YYYY` and `SYSTEM TIME : HH:MM:SS`.
+- **MQ Account Request:** 1000-byte message with `WS-FUNC='INQA'` and `WS-KEY=<11-digit account ID>` → reply on `CARD.DEMO.REPLY.ACCT` with formatted account fields (ID, status, balances, dates, group ID) or `INVALID REQUEST PARAMETERS` if the account is not found.
+- `CICS CDRD` transaction triggers `CODATE01`; `CICS CDRA` triggers `COACCT01` via the MQ trigger monitor.
+
+**Request Message Layout (shared, 1000 bytes):**
+```
+WS-FUNC   PIC X(04)  — 'INQA' for account, any value for date
+WS-KEY    PIC 9(11)  — account ID (numeric); 0 for date requests
+WS-FILLER PIC X(985) — padding
+```
+
+**Dependencies:**
+- Base CardDemo application (VSAM `ACCTDAT` dataset, `CVACT01Y` copybook).
+- IBM MQ queue manager with CICS-MQ bridge configured.
+- IBM MQ COBOL copybooks (`CMQGMOV`, `CMQMDV`, `CMQODV`, `CMQPMOV`, `CMQV`, `CMQTML`).
+
+**Business Rules:**
+- Account requests require `WS-FUNC = 'INQA'` AND `WS-KEY > 0`; any other combination returns an inline error reply.
+- `MQGMO-WAITINTERVAL` is set to 5000 ms; the program exits gracefully on `MQRC-NO-MSG-AVAILABLE`.
+- All MQ GET/PUT pairs are protected by `MQGMO-SYNCPOINT` / `MQPMO-SYNCPOINT` with CICS `SYNCPOINT` at the top of each loop iteration.
+- MQ API errors are written to `CARD.DEMO.ERROR` and trigger program termination.
+
 **User Story Examples:**  
 - As a **cloud integration tester**, I want to send a `DATE` request and see system date response so downstream services can synchronize clocks.  
-- As a **data extraction architect**, I need `ACCT` requests to return account balances and statuses derived from `CVACT01Y` fields.
+- As a **data extraction architect**, I need `INQA` requests to return account balances and statuses derived from `CVACT01Y` fields so data-lake pipelines can ingest current account snapshots.
+- As an **integration engineer**, I want MQ operation failures to be captured in `CARD.DEMO.ERROR` with MQCC/MQRC codes so I can diagnose queue configuration issues without checking CICS journals.
 
 ---
 
