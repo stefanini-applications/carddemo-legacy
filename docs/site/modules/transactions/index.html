@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #d4a017 0%, #8b6914 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #8b6914; margin-bottom: 16px; border-bottom: 2px solid #d4a017; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #d4a017; color: white; margin: 2px; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #fffbf0; border-left: 4px solid #d4a017; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #d4a017; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>💰 Transactions</h1>
+    <p>User Story Development Guide — CardDemo Application</p>
+</div>
+
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> Allow users to browse transaction history, view individual transaction details, and add new transactions online. Batch programs post daily transactions to the TRANSACT file and update account balances.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> Transactions are the primary financial events in CardDemo. They record purchases, credits, payments, fees, and interest charges. Transaction data drives statements, reports, and account balances.</p>
+        <p style="margin-top:10px"><span class="badge">COTRN00C</span> <span class="badge">COTRN01C</span> <span class="badge">COTRN02C</span> <span class="badge">VSAM: TRANSACT</span> <span class="badge">CBTRN01C</span></p>
+    </section>
+
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>Transaction List:</strong> As a cardholder, I want to browse my transaction history so that I can verify charges and identify suspicious activity.</li>
+            <li><strong>Transaction Detail:</strong> As a cardholder, I want to view the details of a specific transaction so that I can see merchant info, amount, and timestamps.</li>
+            <li><strong>Transaction Add:</strong> As an admin, I want to manually add a transaction so that I can process credits, fee waivers, or adjustment entries.</li>
+            <li><strong>Transaction Search:</strong> As a cardholder, I want to filter transactions by date range so that I can review a specific billing period.</li>
+        </ul>
+
+        <h3>⚡ Development Acceleration Factors</h3>
+        <ul>
+            <li><strong>CVTRA05Y.cpy:</strong> Complete 350-byte transaction record structure shared across all CICS and batch programs.</li>
+            <li><strong>Pageable List (COTRN00C):</strong> Forward/backward navigation pattern established for transaction browsing.</li>
+            <li><strong>TRAN-ID Generation:</strong> 16-character transaction ID pattern used for all new transactions.</li>
+        </ul>
+
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>View transaction detail, display transaction list for a card</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Add manual transaction, filtered list by date range, transaction search by type</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>Batch daily posting (CBTRN01C), transaction reversal with balance update, multi-cycle history view</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Components</h3>
+        <ul>
+            <li><strong>COTRN00C.cbl:</strong> Transaction list — pageable display of transactions for the selected card/account.</li>
+            <li><strong>COTRN01C.cbl:</strong> Transaction view — detailed view of a single transaction record.</li>
+            <li><strong>COTRN02C.cbl:</strong> Transaction add — create new transaction record in TRANSACT file.</li>
+            <li><strong>CBTRN01C.cbl:</strong> Batch daily posting — reads DALYTRAN sequential file, validates against CARDXREF/ACCTDAT, posts to TRANSACT.</li>
+            <li><strong>CBTRN02C.cbl:</strong> Alternate batch posting with reject file (DALYREJS).</li>
+            <li><strong>CVTRA05Y.cpy:</strong> Transaction record layout (350 bytes, key = TRAN-ID 16 chars).</li>
+        </ul>
+
+        <h3>🔗 Dependencies</h3>
+        <ul>
+            <li><strong>TRANSACT VSAM:</strong> Transaction master file (KSDS, key = TRAN-ID).</li>
+            <li><strong>CARDXREF VSAM:</strong> Used in batch to resolve CARD-NUM → ACCT-ID.</li>
+            <li><strong>ACCTDAT VSAM:</strong> Account balance updated during batch transaction posting.</li>
+            <li><strong>TCATBALF VSAM:</strong> Transaction category balance — updated by batch posting for interest calculation.</li>
+            <li><strong>DALYTRAN:</strong> Sequential input file for daily batch posting.</li>
+        </ul>
+
+        <h3>📊 Transaction Record Key Fields</h3>
+        <pre>TRAN-ID (X(16))            - Transaction identifier (primary key)
+TRAN-TYPE-CD (X(2))        - Transaction type (e.g., 'SA'=sale, 'CR'=credit)
+TRAN-CAT-CD (9(4))         - Category code (links to TCATBALF)
+TRAN-SOURCE (X(10))        - Source system (e.g., 'ONLINE', 'BATCH')
+TRAN-AMT (S9(9)V99)        - Amount (positive=debit, negative=credit)
+TRAN-CARD-NUM (X(16))      - Card number
+TRAN-MERCHANT-NAME (X(50)) - Merchant name
+TRAN-ORIG-TS (X(26))       - Original timestamp
+TRAN-PROC-TS (X(26))       - Processing timestamp</pre>
+
+        <h3>📁 Key Files</h3>
+        <ul>
+            <li><code>app/cbl/COTRN00C.cbl</code> — Transaction list</li>
+            <li><code>app/cbl/COTRN01C.cbl</code> — Transaction view</li>
+            <li><code>app/cbl/COTRN02C.cbl</code> — Transaction add</li>
+            <li><code>app/cbl/CBTRN01C.cbl</code> — Batch: daily transaction posting</li>
+            <li><code>app/cbl/CBTRN02C.cbl</code> — Batch: daily posting with rejects</li>
+            <li><code>app/cpy/CVTRA05Y.cpy</code> — Transaction record</li>
+            <li><code>app/data/ASCII/dailytran.txt</code> — Sample daily transactions</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Transaction List:</strong>
+            <ul style="margin-top:6px">
+                <li>Given a card with transaction history</li>
+                <li>When user navigates to transaction list</li>
+                <li>Then transactions displayed with ID, type, amount, merchant, and date</li>
+                <li>And user can page forward and backward through the list</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Transaction Add:</strong>
+            <ul style="margin-top:6px">
+                <li>Given all required fields entered (card number, type, amount, merchant)</li>
+                <li>When admin submits transaction add</li>
+                <li>Then transaction written to TRANSACT file and confirmation shown</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Batch Posting:</strong>
+            <ul style="margin-top:6px">
+                <li>Given DALYTRAN file contains daily transactions</li>
+                <li>When CBTRN01C runs</li>
+                <li>Then all valid transactions posted to TRANSACT; account balances updated; invalid records written to DALYREJS</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<footer>
+    <a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em>
+</footer>
+</body>
+</html>

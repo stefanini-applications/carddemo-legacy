@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Cards - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #2a9d8f 0%, #264653 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #264653; margin-bottom: 16px; border-bottom: 2px solid #2a9d8f; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #2a9d8f; color: white; margin: 2px; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #f0faf9; border-left: 4px solid #2a9d8f; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #2a9d8f; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🃏 Credit Cards</h1>
+    <p>User Story Development Guide — CardDemo Application</p>
+</div>
+
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> List, view, and update credit card records. Each card is linked to a specific account and customer via the CARDXREF cross-reference file.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> Credit cards are the primary instrument for transactions. The card number (16 digits) links transactions, authorizations, and accounts. Card status management supports fraud prevention and lifecycle management.</p>
+        <p style="margin-top:10px"><span class="badge">COCRDLIC</span> <span class="badge">COCRDSLC</span> <span class="badge">COCRDUPC</span> <span class="badge">VSAM: CARDDAT</span> <span class="badge">VSAM: CARDXREF</span></p>
+    </section>
+
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>Card List:</strong> As a cardholder, I want to see all credit cards on my account so that I can identify active and inactive cards.</li>
+            <li><strong>Card Detail:</strong> As a cardholder, I want to view my card details (number, status, expiration) so that I can verify card information.</li>
+            <li><strong>Card Update:</strong> As an admin, I want to update a card's status so that I can block a compromised card immediately.</li>
+            <li><strong>Card Navigation:</strong> As a cardholder, I want to page through a list of cards so that I can find the specific card I need.</li>
+        </ul>
+
+        <h3>⚡ Development Acceleration Factors</h3>
+        <ul>
+            <li><strong>CARDXREF Three-Way Link:</strong> Lookup pattern CARD-NUM → CUST-ID + ACCT-ID established in COCRDSLC — reusable for all card operations.</li>
+            <li><strong>Pageable List Pattern:</strong> COCRDLIC establishes forward/backward paging pattern using VSAM alternate keys — reuse for other list screens.</li>
+            <li><strong>CVCRD01Y.cpy:</strong> Card work area shared across all card programs.</li>
+        </ul>
+
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>View card detail by card number, display card list for an account</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Update card status, pageable card list with selection, cross-reference lookup</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>Card reissuance workflow, card blocking with transaction reversal, multi-card account management</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Components</h3>
+        <ul>
+            <li><strong>COCRDLIC.cbl:</strong> Card list — displays pageable list of cards for an account; selection navigates to card detail.</li>
+            <li><strong>COCRDSLC.cbl:</strong> Card view/select — detailed card view using CARDXREF for cross-reference lookup.</li>
+            <li><strong>COCRDUPC.cbl:</strong> Card update — modify card fields and write back to CARDDAT.</li>
+            <li><strong>CVCRD01Y.cpy:</strong> Card work area copybook (holds card number, account ID, customer ID).</li>
+        </ul>
+
+        <h3>🔗 Dependencies</h3>
+        <ul>
+            <li><strong>CARDDAT VSAM:</strong> Card master file (KSDS, key = CARD-NUM 16 digits).</li>
+            <li><strong>CARDXREF VSAM:</strong> Cross-reference (KSDS, key = CARD-NUM; alternate key = ACCT-ID).</li>
+            <li><strong>ACCTDAT VSAM:</strong> Account data — retrieved when displaying card details.</li>
+            <li><strong>CUSTDAT VSAM:</strong> Customer data — retrieved for customer name display.</li>
+        </ul>
+
+        <h3>📊 Card Cross-Reference Structure</h3>
+        <pre>CARDXREF Record:
+  FD-XREF-CARD-NUM   PIC X(16)  - Card number (primary key)
+  FD-XREF-CUST-NUM   PIC 9(9)   - Customer ID
+  FD-XREF-ACCT-ID    PIC 9(11)  - Account ID (alternate key)</pre>
+
+        <h3>📁 Key Files</h3>
+        <ul>
+            <li><code>app/cbl/COCRDLIC.cbl</code> — Card list</li>
+            <li><code>app/cbl/COCRDSLC.cbl</code> — Card detail view</li>
+            <li><code>app/cbl/COCRDUPC.cbl</code> — Card update</li>
+            <li><code>app/cpy/CVCRD01Y.cpy</code> — Card work area</li>
+            <li><code>app/data/ASCII/carddata.txt</code> — Sample card data</li>
+            <li><code>app/data/ASCII/cardxref.txt</code> — Sample cross-reference</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Card List:</strong>
+            <ul style="margin-top:6px">
+                <li>Given an account with multiple cards</li>
+                <li>When user navigates to card list</li>
+                <li>Then all cards for the account are shown with card number, status, and expiration</li>
+                <li>And user can page forward/backward through the list</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Card Detail View:</strong>
+            <ul style="margin-top:6px">
+                <li>Given a valid card number</li>
+                <li>When user selects a card</li>
+                <li>Then all card fields are displayed along with linked account and customer info</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Card Update:</strong>
+            <ul style="margin-top:6px">
+                <li>Given an admin user on the card update screen</li>
+                <li>When card status is changed and confirmed</li>
+                <li>Then CARDDAT is updated and confirmation message shown</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<footer>
+    <a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em>
+</footer>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #e63946 0%, #c1121f 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #c1121f; margin-bottom: 16px; border-bottom: 2px solid #e63946; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #e63946; color: white; margin: 2px; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #fff3f3; border-left: 4px solid #e63946; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #e63946; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🔐 Authentication</h1>
+    <p>User Story Development Guide — CardDemo Application</p>
+</div>
+
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> Control user access to the CardDemo application via signon screen, credential validation against the USRSEC VSAM file, and routing to the appropriate menu based on user type.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> Every session starts with authentication. User type (Admin vs Regular) gates all subsequent operations. This module is the foundation of the application's security model.</p>
+        <p style="margin-top:10px"><span class="badge">CICS</span> <span class="badge">VSAM</span> <span class="badge">COSGN00C</span> <span class="badge">TranID: CC00</span></p>
+    </section>
+
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>Regular User Login:</strong> As a cardholder, I want to log in with my user ID and password so that I can securely access my account information.</li>
+            <li><strong>Admin Login:</strong> As an admin, I want to log in and be routed to the admin menu so that I can manage users and system configuration.</li>
+            <li><strong>Login Failure Feedback:</strong> As a user, I want to receive a clear error message when my credentials are invalid so that I know my login was unsuccessful.</li>
+            <li><strong>User Type Routing:</strong> As the system, I want to route authenticated users to the correct menu so that each user sees only their permitted options.</li>
+        </ul>
+
+        <h3>⚡ Development Acceleration Factors</h3>
+        <ul>
+            <li><strong>COSGN00C:</strong> Complete signon program already implemented — use as pattern for additional authentication checks.</li>
+            <li><strong>COCOM01Y (COMMAREA):</strong> Session state structure reused across all programs — carries user ID, user type, navigation state.</li>
+            <li><strong>USRSEC VSAM:</strong> User credential store is pre-defined with standard record layout (<code>CSUSR01Y</code>).</li>
+        </ul>
+
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>Display signon screen, validate credentials, display error on failure</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Add multi-factor verification, password expiry enforcement, login attempt tracking</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>SSO integration, RACF/external security manager integration, audit logging of all signon events</td></tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Components</h3>
+        <ul>
+            <li><strong>COSGN00C.cbl:</strong> Main signon program. Validates user ID + password against USRSEC. Sets COMMAREA user type on success. TranID: CC00.</li>
+            <li><strong>COCOM01Y.cpy:</strong> COMMAREA copybook — carries session state across all programs (user ID, user type, from/to program, account/card/customer info).</li>
+            <li><strong>CSUSR01Y.cpy:</strong> User security record layout (8-char ID, 8-char password, 1-char type A/U).</li>
+            <li><strong>COSGN00.bms:</strong> BMS screen definition for signon screen.</li>
+        </ul>
+
+        <h3>🔗 Dependencies</h3>
+        <ul>
+            <li><strong>USRSEC VSAM File:</strong> Must be loaded with user records before authentication works.</li>
+            <li><strong>COMEN01C (CM00):</strong> Target for regular user post-authentication.</li>
+            <li><strong>COADM01C (CA00):</strong> Target for admin user post-authentication.</li>
+        </ul>
+
+        <h3>📊 Authentication Flow</h3>
+        <pre>EIBCALEN = 0 → Initialize signon screen (first entry)
+User enters UserID + Password → Press Enter
+COSGN00C reads USRSEC(UserID)
+  → Match found AND password matches:
+      Set CDEMO-USER-ID = UserID
+      Set CDEMO-USER-TYPE = 'A' or 'U'
+      If 'A' → XCTL to COADM01C (CA00)
+      If 'U' → XCTL to COMEN01C (CM00)
+  → Not found OR password mismatch:
+      Display error: "Invalid credentials"
+      Re-present signon screen</pre>
+
+        <h3>📁 Key Files</h3>
+        <ul>
+            <li><code>app/cbl/COSGN00C.cbl</code> — Signon program</li>
+            <li><code>app/cpy/COCOM01Y.cpy</code> — COMMAREA definition</li>
+            <li><code>app/cpy/CSUSR01Y.cpy</code> — User security record</li>
+            <li><code>app/bms/COSGN00.bms</code> — Signon BMS map</li>
+            <li><code>app/data/ASCII/usrsec.txt</code> — Sample user data</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Successful Login:</strong>
+            <ul style="margin-top:6px">
+                <li>Given a valid user ID and password exist in USRSEC</li>
+                <li>When user enters correct credentials and presses Enter</li>
+                <li>Then user is routed to CM00 (regular) or CA00 (admin) with user ID set in COMMAREA</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Failed Login:</strong>
+            <ul style="margin-top:6px">
+                <li>Given invalid or non-existent credentials</li>
+                <li>When user presses Enter</li>
+                <li>Then error message displayed on signon screen; user is NOT routed to menu</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>User Type Routing:</strong>
+            <ul style="margin-top:6px">
+                <li>Given user type = 'A' in USRSEC</li>
+                <li>When login succeeds</li>
+                <li>Then admin menu (CA00) is displayed, not user menu</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<footer>
+    <a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em>
+</footer>
+</body>
+</html>

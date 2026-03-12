@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo - User Story Documentation</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; opacity: 0.85; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .stat-card { background: white; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stat-card .number { font-size: 2.5em; font-weight: bold; color: #0f3460; }
+        .stat-card .label { color: #666; font-size: 0.9em; margin-top: 5px; }
+        .section-title { font-size: 1.6em; margin-bottom: 20px; color: #0f3460; border-bottom: 2px solid #0f3460; padding-bottom: 8px; }
+        .modules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .module-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; border-top: 4px solid; }
+        .module-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .module-card h3 { font-size: 1.1em; margin-bottom: 8px; }
+        .module-card p { font-size: 0.85em; color: #555; line-height: 1.5; }
+        .module-card .badge { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 12px; margin-top: 10px; color: white; }
+        .col-auth { border-color: #e63946; } .col-auth .badge { background: #e63946; }
+        .col-acct { border-color: #457b9d; } .col-acct .badge { background: #457b9d; }
+        .col-card { border-color: #2a9d8f; } .col-card .badge { background: #2a9d8f; }
+        .col-trn  { border-color: #e9c46a; } .col-trn .badge  { background: #d4a017; }
+        .col-bill { border-color: #f4a261; } .col-bill .badge { background: #f4a261; }
+        .col-rpt  { border-color: #6d6875; } .col-rpt .badge  { background: #6d6875; }
+        .col-usr  { border-color: #264653; } .col-usr .badge  { background: #264653; }
+        .col-bat  { border-color: #8ecae6; } .col-bat .badge  { background: #219ebc; }
+        .col-az   { border-color: #e76f51; } .col-az .badge   { background: #e76f51; }
+        .col-db2  { border-color: #023e8a; } .col-db2 .badge  { background: #023e8a; }
+        .col-mq   { border-color: #7b2d8b; } .col-mq .badge   { background: #7b2d8b; }
+        .tech-section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 15px; }
+        .tech-item { background: #f0f4ff; border-radius: 6px; padding: 10px 14px; font-size: 0.9em; }
+        .tech-item strong { color: #0f3460; }
+        footer { text-align: center; padding: 30px; color: #888; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏦 CardDemo</h1>
+        <p>Mainframe Credit Card Management Application — User Story Documentation Hub</p>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card"><div class="number">11</div><div class="label">Modules</div></div>
+            <div class="stat-card"><div class="number">31+</div><div class="label">CICS Programs</div></div>
+            <div class="stat-card"><div class="number">12+</div><div class="label">Batch Programs</div></div>
+            <div class="stat-card"><div class="number">9</div><div class="label">VSAM Datasets</div></div>
+            <div class="stat-card"><div class="number">3</div><div class="label">DB Platforms</div></div>
+        </div>
+
+        <h2 class="section-title">📦 Modules</h2>
+        <div class="modules-grid">
+            <a href="modules/authentication/index.html" class="module-card col-auth">
+                <h3>🔐 Authentication</h3>
+                <p>User signon/signoff, credential validation, session management, user type routing (Admin/Regular).</p>
+                <span class="badge">CICS • VSAM</span>
+            </a>
+            <a href="modules/accounts/index.html" class="module-card col-acct">
+                <h3>💳 Accounts</h3>
+                <p>View and update credit card accounts: balances, credit limits, status, and customer linkage.</p>
+                <span class="badge">CICS • VSAM</span>
+            </a>
+            <a href="modules/credit-cards/index.html" class="module-card col-card">
+                <h3>🃏 Credit Cards</h3>
+                <p>List, view, and update credit card records linked to accounts and customers.</p>
+                <span class="badge">CICS • VSAM</span>
+            </a>
+            <a href="modules/transactions/index.html" class="module-card col-trn">
+                <h3>💰 Transactions</h3>
+                <p>Browse transaction history, view details, and add new transactions online.</p>
+                <span class="badge">CICS • VSAM</span>
+            </a>
+            <a href="modules/bill-payment/index.html" class="module-card col-bill">
+                <h3>🧾 Bill Payment</h3>
+                <p>Online bill payment processing — pay account balance and record payment transactions.</p>
+                <span class="badge">CICS • VSAM</span>
+            </a>
+            <a href="modules/reports/index.html" class="module-card col-rpt">
+                <h3>📊 Reports</h3>
+                <p>Generate and print transaction reports by date range via online-to-batch submission.</p>
+                <span class="badge">CICS • Batch</span>
+            </a>
+            <a href="modules/user-management/index.html" class="module-card col-usr">
+                <h3>👥 User Management</h3>
+                <p>Admin-only CRUD for user accounts in the USRSEC security file.</p>
+                <span class="badge">CICS • VSAM • Admin Only</span>
+            </a>
+            <a href="modules/batch-processing/index.html" class="module-card col-bat">
+                <h3>⚙️ Batch Processing</h3>
+                <p>Daily transaction posting, interest calculation, statement generation, and file management.</p>
+                <span class="badge">Batch COBOL • JCL</span>
+            </a>
+            <a href="modules/authorization/index.html" class="module-card col-az">
+                <h3>🔒 Authorization</h3>
+                <p>Real-time credit card authorization via IBM MQ with IMS DB storage and DB2 fraud detection.</p>
+                <span class="badge">CICS • MQ • IMS • DB2</span>
+            </a>
+            <a href="modules/transaction-type-db2/index.html" class="module-card col-db2">
+                <h3>🗄️ Transaction Type DB2</h3>
+                <p>Maintain transaction type reference data in DB2 using embedded static SQL.</p>
+                <span class="badge">CICS • DB2</span>
+            </a>
+            <a href="modules/mq-integration/index.html" class="module-card col-mq">
+                <h3>📨 MQ Integration</h3>
+                <p>Asynchronous account and date inquiry patterns using IBM MQ request/response messaging.</p>
+                <span class="badge">CICS • IBM MQ</span>
+            </a>
+        </div>
+
+        <div class="tech-section">
+            <h2 class="section-title">🛠️ Technology Stack</h2>
+            <div class="tech-grid">
+                <div class="tech-item"><strong>Language:</strong> IBM COBOL</div>
+                <div class="tech-item"><strong>TP Monitor:</strong> CICS TS</div>
+                <div class="tech-item"><strong>Primary Storage:</strong> VSAM (KSDS/ESDS)</div>
+                <div class="tech-item"><strong>Relational DB:</strong> IBM DB2</div>
+                <div class="tech-item"><strong>Hierarchical DB:</strong> IMS DB</div>
+                <div class="tech-item"><strong>Messaging:</strong> IBM MQ</div>
+                <div class="tech-item"><strong>Screens:</strong> BMS Maps</div>
+                <div class="tech-item"><strong>Batch:</strong> JCL + COBOL</div>
+                <div class="tech-item"><strong>Scheduling:</strong> CA7 / Control-M</div>
+                <div class="tech-item"><strong>Platform:</strong> IBM z/OS</div>
+            </div>
+        </div>
+
+        <div class="tech-section">
+            <h2 class="section-title">📐 Architecture Overview</h2>
+            <p>CardDemo is a <strong>CICS pseudo-conversational</strong> application. Each CICS program handles one user interaction, sends a BMS screen, and returns control to CICS. Navigation state is carried via the COMMAREA (<code>CARDDEMO-COMMAREA</code>).</p>
+            <br>
+            <p>The application has two user roles: <strong>Regular User (U)</strong> — accesses accounts, cards, transactions, bill payment, and reports; <strong>Admin (A)</strong> — additionally manages users and system configuration.</p>
+            <br>
+            <p>Core data lives in <strong>VSAM KSDS files</strong>. Extension modules add DB2, IMS DB, and MQ capabilities for richer integration patterns.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>CardDemo — AWS Reference Application &nbsp;|&nbsp; Documentation generated 2026-03-12</p>
+        <p><a href="../system-overview.md">📄 Full System Overview (Markdown)</a></p>
+    </footer>
+</body>
+</html>

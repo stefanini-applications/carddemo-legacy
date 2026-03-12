@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Processing - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #219ebc 0%, #023047 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #023047; margin-bottom: 16px; border-bottom: 2px solid #219ebc; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #219ebc; color: white; margin: 2px; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #f0f8ff; border-left: 4px solid #219ebc; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        table.prog-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9em; }
+        table.prog-table th, table.prog-table td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; }
+        table.prog-table th { background: #f0f8ff; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #219ebc; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>⚙️ Batch Processing</h1>
+    <p>User Story Development Guide — CardDemo Application</p>
+</div>
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> Execute nightly and periodic batch jobs: transaction posting, interest calculation, statement generation, account/customer file operations, and data export/import.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> Batch processing is the backbone of CardDemo's financial operations. Daily transactions must be posted, interest calculated monthly, and statements generated for billing. These jobs run outside business hours via JCL.</p>
+        <p style="margin-top:10px"><span class="badge">Batch COBOL</span> <span class="badge">JCL</span> <span class="badge">VSAM</span> <span class="badge">Nightly + Monthly</span></p>
+    </section>
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>Daily Posting:</strong> As a batch operator, I want daily transactions posted nightly so that account balances are current by the next business day.</li>
+            <li><strong>Interest Calculation:</strong> As a batch operator, I want interest calculated monthly so that finance charges appear on cardholder statements.</li>
+            <li><strong>Statement Generation:</strong> As a batch operator, I want statements generated for all active accounts so that cardholders receive their monthly bills.</li>
+            <li><strong>Reject Handling:</strong> As a batch operator, I want rejected transactions captured in a reject file so that exceptions can be reviewed and resolved.</li>
+            <li><strong>Data Export:</strong> As an integration team, I want account/transaction data exported so that it can be consumed by downstream systems.</li>
+        </ul>
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>Read account file and write to output (CBACT01C), file definition JCL</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Transaction validation (CBTRN02C), data export (CBEXPORT), customer file processing</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>Full daily transaction posting (CBTRN01C), interest calculation (CBACT04C), statement generation (CBSTM03A/B)</td></tr>
+        </table>
+    </section>
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Programs</h3>
+        <table class="prog-table">
+            <tr><th>Program</th><th>JCL</th><th>Function</th></tr>
+            <tr><td>CBTRN01C</td><td>POSTTRAN.jcl</td><td>Post daily transactions from DALYTRAN; update TRANSACT, ACCTDAT, TCATBALF</td></tr>
+            <tr><td>CBTRN02C</td><td>POSTTRAN.jcl</td><td>Alternate daily posting with reject file (DALYREJS)</td></tr>
+            <tr><td>CBACT04C</td><td>INTCALC.jcl</td><td>Interest calculation using DISCGRP rates applied to TCATBALF</td></tr>
+            <tr><td>CBSTM03A/B</td><td>CREASTMT.JCL</td><td>Statement generation (read TRANSACT, format and produce statements)</td></tr>
+            <tr><td>CBACT01C</td><td>READACCT.jcl</td><td>Read account file sequentially, write to output files</td></tr>
+            <tr><td>CBCUS01C</td><td>READCUST.jcl</td><td>Customer file processing</td></tr>
+            <tr><td>CBEXPORT</td><td>CBEXPORT.jcl</td><td>Export account/transaction data</td></tr>
+            <tr><td>CBIMPORT</td><td>CBIMPORT.jcl</td><td>Import account/transaction data</td></tr>
+            <tr><td>CSUTLDTC</td><td>—</td><td>Date utility (called by other programs)</td></tr>
+        </table>
+        <h3>🔗 VSAM Dataset Dependencies</h3>
+        <ul>
+            <li><strong>DALYTRAN:</strong> Daily transaction input (sequential) → fed to CBTRN01C/02C</li>
+            <li><strong>TRANSACT:</strong> Transaction master (KSDS) → written by posting, read by reports</li>
+            <li><strong>ACCTDAT:</strong> Account master → balance updated by posting, interest calculation</li>
+            <li><strong>TCATBALF:</strong> Transaction category balance → updated by posting, read by interest calc</li>
+            <li><strong>DISCGRP:</strong> Discount group interest rates → read by CBACT04C</li>
+            <li><strong>DALYREJS:</strong> Daily reject file (sequential) → written by CBTRN02C for exceptions</li>
+        </ul>
+        <h3>📊 Interest Calculation Logic</h3>
+        <pre>For each TCATBALF record (Account + Type + Category):
+  Look up interest rate in DISCGRP:
+    Key = ACCT-GROUP-ID + TRAN-TYPE-CD
+  Calculate: Interest = TRAN-CAT-BAL * (Rate / 12)
+  Create interest TRAN-RECORD in TRANSACT
+  Update ACCTDAT: ACCT-CURR-BAL += Interest
+  Update TCATBALF balance</pre>
+    </section>
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Daily Transaction Posting:</strong>
+            <ul style="margin-top:6px">
+                <li>Given DALYTRAN contains N transaction records</li>
+                <li>When CBTRN01C/02C runs successfully</li>
+                <li>Then all valid records posted to TRANSACT; ACCTDAT balances updated; TCATBALF updated; reject file contains only invalid records</li>
+                <li>And job prints control totals (records read, posted, rejected)</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Interest Calculation:</strong>
+            <ul style="margin-top:6px">
+                <li>Given TCATBALF contains balances and DISCGRP has rates</li>
+                <li>When CBACT04C runs</li>
+                <li>Then interest transactions created for all non-zero balances; ACCTDAT balances updated</li>
+            </ul>
+        </div>
+    </section>
+</div>
+<footer><a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em></footer>
+</body>
+</html>

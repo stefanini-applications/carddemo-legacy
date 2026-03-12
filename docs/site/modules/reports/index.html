@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #6d6875 0%, #4a4458 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #4a4458; margin-bottom: 16px; border-bottom: 2px solid #6d6875; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #6d6875; color: white; margin: 2px; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #f8f7fa; border-left: 4px solid #6d6875; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #6d6875; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>📊 Reports</h1>
+    <p>User Story Development Guide — CardDemo Application</p>
+</div>
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> Allow users to request transaction reports by date range. The online program (CORPT00C) accepts report parameters and submits a batch JCL job via an extra-partition TDQ to produce printed output.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> Reports enable cardholders and admins to review transaction history for a billing period. Statement generation is also driven by batch report programs.</p>
+        <p style="margin-top:10px"><span class="badge">CORPT00C</span> <span class="badge">TranID: CR00</span> <span class="badge">CBSTM03A/B</span> <span class="badge">TDQ-based batch submit</span></p>
+    </section>
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>Report Request:</strong> As a cardholder, I want to request a transaction report for a date range so that I can review my spending history.</li>
+            <li><strong>Date Validation:</strong> As the system, I want to validate report date range so that end date is after start date and format is correct.</li>
+            <li><strong>Statement Generation:</strong> As a batch operator, I want to generate monthly statements so that all cardholders receive their account summaries.</li>
+        </ul>
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>Display report request screen, validate date range format</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Submit report to batch via TDQ, add report type selection</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>Statement generation batch (CBSTM03A/B), multi-account summary report, PDF output generation</td></tr>
+        </table>
+    </section>
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Components</h3>
+        <ul>
+            <li><strong>CORPT00C.cbl:</strong> Online report request. Accepts date range parameters, validates format (YYYY-MM-DD), writes JCL to extra-partition TDQ for batch job submission. TranID: CR00.</li>
+            <li><strong>CBSTM03A.CBL:</strong> Statement generation part A — reads TRANSACT, formats statement lines.</li>
+            <li><strong>CBSTM03B.CBL:</strong> Statement generation part B — sorts and produces final statement output.</li>
+            <li><strong>CORPT00.bms:</strong> Report request BMS screen (date range, report name inputs).</li>
+        </ul>
+        <h3>🔗 Dependencies</h3>
+        <ul>
+            <li><strong>TRANSACT VSAM:</strong> Source of transaction data for all reports.</li>
+            <li><strong>ACCTDAT VSAM:</strong> Account header data for statements.</li>
+            <li><strong>Extra-partition TDQ:</strong> CICS mechanism for submitting JCL to internal reader.</li>
+            <li><strong>Batch JCL (TRANREPT.jcl, CREASTMT.JCL):</strong> Actual report/statement batch jobs.</li>
+        </ul>
+        <h3>📊 Report Submission Pattern</h3>
+        <pre>User enters: Start Date (YYYY-MM-DD), End Date (YYYY-MM-DD)
+CORPT00C validates dates
+Builds JCL record string:
+  "//TRANREPT JOB ..."
+  "//PARM '&STARTDT=yyyy-mm-dd,&ENDDT=yyyy-mm-dd'"
+Writes JCL to CICS TDQ (Internal Reader)
+Batch job executes → SYSOUT report produced</pre>
+    </section>
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Report Request:</strong>
+            <ul style="margin-top:6px">
+                <li>Given valid start and end dates in YYYY-MM-DD format</li>
+                <li>When user submits report request</li>
+                <li>Then JCL submitted to batch; confirmation message shown</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Date Validation:</strong>
+            <ul style="margin-top:6px">
+                <li>Given invalid date format or end date before start date</li>
+                <li>When user submits</li>
+                <li>Then error displayed; no batch job submitted</li>
+            </ul>
+        </div>
+    </section>
+</div>
+<footer><a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em></footer>
+</body>
+</html>

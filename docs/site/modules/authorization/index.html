@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #e76f51 0%, #6d2b17 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #6d2b17; margin-bottom: 16px; border-bottom: 2px solid #e76f51; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #e76f51; color: white; margin: 2px; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #fff5f0; border-left: 4px solid #e76f51; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #e76f51; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🔒 Authorization</h1>
+    <p>User Story Development Guide — CardDemo Application (Extension Module)</p>
+</div>
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> Real-time credit card authorization processing. External POS/systems send authorization requests via IBM MQ. COPAUA0C processes requests, applies business rules (credit check, fraud detection), stores decisions in IMS DB, and sends responses via MQ reply queue.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> Authorization is the gatekeeper for all card-present and card-not-present transactions. It decides in real-time whether a transaction is approved or declined, integrating with VSAM account data, IMS DB for audit, and DB2 for fraud analytics.</p>
+        <p style="margin-top:10px"><span class="badge">COPAUA0C</span> <span class="badge">TranID: CP00</span> <span class="badge">IBM MQ</span> <span class="badge">IMS DB</span> <span class="badge">DB2: AUTHFRDS</span></p>
+    </section>
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>Authorization Request:</strong> As a merchant terminal, I want to submit a card authorization request via MQ so that I can verify the card before completing a sale.</li>
+            <li><strong>Authorization Response:</strong> As a merchant terminal, I want to receive an approval or decline response so that I can complete or reject the transaction at the point of sale.</li>
+            <li><strong>View Pending Authorizations:</strong> As a cardholder, I want to view pending authorizations on my account so that I can track recent transactions before they post.</li>
+            <li><strong>Fraud Detection:</strong> As a fraud analyst, I want authorization decisions stored in DB2 so that I can analyze patterns and detect suspicious activity.</li>
+            <li><strong>Auth Purge:</strong> As a batch operator, I want expired authorizations purged so that the IMS database does not grow unbounded.</li>
+        </ul>
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>View authorization summary screen (COPAUS0C), view auth detail (COPAUS1C)</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Add fraud flag to auth record, view auth history by account, navigate auth list</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>Full MQ authorization processing (COPAUA0C), batch purge (CBPAUP0C), DB2 fraud analytics integration, IMS DB load/unload</td></tr>
+        </table>
+    </section>
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Components</h3>
+        <ul>
+            <li><strong>COPAUA0C.cbl:</strong> Core authorization decision program. MQ-triggered (CP00). Reads up to 500 messages per trigger. Validates card/account, applies rules, writes to IMS, sends MQ response.</li>
+            <li><strong>COPAUS0C.cbl:</strong> Authorization summary view screen for accounts.</li>
+            <li><strong>COPAUS1C.cbl:</strong> Authorization detail view.</li>
+            <li><strong>COPAUS2C.cbl:</strong> Authorization navigation/search.</li>
+            <li><strong>CBPAUP0C.cbl:</strong> Batch purge of expired authorization records from IMS DB.</li>
+        </ul>
+        <h3>🔗 Dependencies</h3>
+        <ul>
+            <li><strong>IBM MQ:</strong> Request queue (CP00 triggered by message arrival), reply queue for responses.</li>
+            <li><strong>IMS DB (DBPAUTP0):</strong> Hierarchical storage for authorization records (parent: account, child: auth detail).</li>
+            <li><strong>DB2 (AUTHFRDS):</strong> Fraud detection data store.</li>
+            <li><strong>ACCTDAT / CUSTDAT / CARDDAT / CCXREF VSAM:</strong> Account, customer, card lookup during authorization.</li>
+        </ul>
+        <h3>📊 Authorization Decision Logic</h3>
+        <pre>Receive MQ auth request → extract card number + amount
+Lookup CCXREF → resolve ACCT-ID + CUST-ID
+Read ACCTDAT → get ACCT-ACTIVE-STATUS, ACCT-CURR-BAL, ACCT-CREDIT-LIMIT
+Check fraud flags in IMS / DB2
+
+Decision:
+  APPROVED if:
+    ACCT-ACTIVE-STATUS = 'Y'
+    AND (ACCT-CREDIT-LIMIT - ACCT-CURR-BAL) >= requested amount
+    AND no fraud flags
+  DECLINED otherwise (with reason code)
+
+Write auth record to IMS DB (DBPAUTP0)
+Write fraud data to DB2 (AUTHFRDS) if applicable
+Send response to MQ reply queue (APPROVED/DECLINED + amount + timestamp)</pre>
+        <h3>📁 Key Files</h3>
+        <ul>
+            <li><code>app/app-authorization-ims-db2-mq/cbl/COPAUA0C.cbl</code></li>
+            <li><code>app/app-authorization-ims-db2-mq/cbl/COPAUS0C.cbl</code></li>
+            <li><code>app/app-authorization-ims-db2-mq/ims/DBPAUTP0.dbd</code></li>
+            <li><code>app/app-authorization-ims-db2-mq/ddl/AUTHFRDS.ddl</code></li>
+            <li><code>app/app-authorization-ims-db2-mq/README.md</code></li>
+        </ul>
+    </section>
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Approved Authorization:</strong>
+            <ul style="margin-top:6px">
+                <li>Given active account with sufficient available credit and no fraud flags</li>
+                <li>When MQ auth request received</li>
+                <li>Then APPROVED response sent to reply queue; auth record written to IMS DB</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Declined — Insufficient Credit:</strong>
+            <ul style="margin-top:6px">
+                <li>Given requested amount exceeds available credit</li>
+                <li>When MQ auth request received</li>
+                <li>Then DECLINED response sent with reason "Insufficient Credit"; auth record written to IMS DB</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>Auth View:</strong>
+            <ul style="margin-top:6px">
+                <li>Given account has authorization records in IMS DB</li>
+                <li>When user navigates to auth view (COPAUS0C)</li>
+                <li>Then list of authorizations displayed with status, amount, and timestamp</li>
+            </ul>
+        </div>
+    </section>
+</div>
+<footer><a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em></footer>
+</body>
+</html>

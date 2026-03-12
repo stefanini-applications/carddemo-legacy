@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - User Story Development Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: linear-gradient(135deg, #264653 0%, #1a3040 100%); color: white; padding: 40px 20px; }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        h2 { font-size: 1.4em; color: #1a3040; margin-bottom: 16px; border-bottom: 2px solid #264653; padding-bottom: 8px; }
+        h3 { font-size: 1.1em; color: #333; margin: 16px 0 10px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; line-height: 1.5; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Courier New', monospace; }
+        pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; margin: 12px 0; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8em; background: #264653; color: white; margin: 2px; }
+        .admin-badge { background: #e63946; }
+        .complexity-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .complexity-table th, .complexity-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .complexity-table th { background: #f8f8f8; font-weight: 600; }
+        .ac-box { background: #f0f4f7; border-left: 4px solid #264653; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 10px 0; }
+        footer { text-align: center; padding: 24px; color: #888; font-size: 0.9em; }
+        footer a { color: #264653; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>👥 User Management</h1>
+    <p>User Story Development Guide — CardDemo Application</p>
+</div>
+<div class="container">
+    <section>
+        <h2>📋 Overview</h2>
+        <p><strong>Purpose:</strong> Admin-only CRUD operations for managing user accounts in the USRSEC VSAM security file. Admins can list, add, update, and delete users.</p>
+        <p style="margin-top:10px"><strong>Business Context:</strong> User management controls who can access CardDemo and what they can do. Proper user lifecycle management (onboarding, role changes, offboarding) is essential for security.</p>
+        <p style="margin-top:10px"><span class="badge admin-badge">Admin Only</span> <span class="badge">COUSR00C–COUSR03C</span> <span class="badge">VSAM: USRSEC</span> <span class="badge">Admin Menu Options 1–4</span></p>
+    </section>
+    <section>
+        <h2>🎯 User Story Development Guide</h2>
+        <h3>📝 Module-Specific US Templates</h3>
+        <ul>
+            <li><strong>User List:</strong> As an admin, I want to view a list of all system users so that I can see who has access to CardDemo.</li>
+            <li><strong>User Add:</strong> As an admin, I want to create a new user account so that a new employee can access the system.</li>
+            <li><strong>User Update:</strong> As an admin, I want to update a user's type or password so that I can manage access changes.</li>
+            <li><strong>User Delete:</strong> As an admin, I want to delete a user account so that departing employees lose system access immediately.</li>
+            <li><strong>Access Control:</strong> As the system, I want to prevent non-admin users from accessing user management so that security is enforced.</li>
+        </ul>
+        <h3>📊 Complexity Guidelines</h3>
+        <table class="complexity-table">
+            <tr><th>Complexity</th><th>Points</th><th>Examples</th></tr>
+            <tr><td>Simple</td><td>1–2</td><td>List users (pageable), view user details</td></tr>
+            <tr><td>Medium</td><td>3–5</td><td>Add user, update user, delete user with confirmation</td></tr>
+            <tr><td>Complex</td><td>5–8</td><td>Password policy enforcement, user audit trail, role-based access control (beyond A/U types), bulk user import</td></tr>
+        </table>
+    </section>
+    <section>
+        <h2>🔧 Technical Foundation</h2>
+        <h3>🏗️ Key Components</h3>
+        <ul>
+            <li><strong>COUSR00C.cbl:</strong> User list — pageable display (10/page) of all USRSEC records; admin selects user for detail.</li>
+            <li><strong>COUSR01C.cbl:</strong> User add — create new user record in USRSEC file.</li>
+            <li><strong>COUSR02C.cbl:</strong> User update — modify existing user (name, password, type).</li>
+            <li><strong>COUSR03C.cbl:</strong> User delete — remove user record from USRSEC.</li>
+            <li><strong>COADM01C.cbl:</strong> Admin menu — routes to user management programs (options 1–4).</li>
+            <li><strong>CSUSR01Y.cpy:</strong> User security record layout (80 bytes).</li>
+        </ul>
+        <h3>🔗 Dependencies</h3>
+        <ul>
+            <li><strong>USRSEC VSAM:</strong> User security file (KSDS, key = SEC-USR-ID 8 chars).</li>
+            <li><strong>Authentication module:</strong> User must be type 'A' to access user management; enforced by COADM01C.</li>
+        </ul>
+        <h3>📊 User Record Structure</h3>
+        <pre>SEC-USER-DATA (80 bytes):
+  SEC-USR-ID      PIC X(8)   - User ID (primary key)
+  SEC-USR-FNAME   PIC X(20)  - First name
+  SEC-USR-LNAME   PIC X(20)  - Last name
+  SEC-USR-PWD     PIC X(8)   - Password (plaintext - demo only)
+  SEC-USR-TYPE    PIC X(1)   - 'A'=Admin, 'U'=Regular User
+  SEC-USR-FILLER  PIC X(23)  - Reserved</pre>
+        <h3>📁 Key Files</h3>
+        <ul>
+            <li><code>app/cbl/COUSR00C.cbl</code> — User list</li>
+            <li><code>app/cbl/COUSR01C.cbl</code> — User add</li>
+            <li><code>app/cbl/COUSR02C.cbl</code> — User update</li>
+            <li><code>app/cbl/COUSR03C.cbl</code> — User delete</li>
+            <li><code>app/cpy/CSUSR01Y.cpy</code> — User record layout</li>
+            <li><code>app/cpy/COADM02Y.cpy</code> — Admin menu options definition</li>
+        </ul>
+    </section>
+    <section>
+        <h2>✅ Acceptance Criteria Patterns</h2>
+        <div class="ac-box">
+            <strong>Access Control:</strong>
+            <ul style="margin-top:6px">
+                <li>Given a regular user (type 'U') is authenticated</li>
+                <li>When they attempt to access user management (CA00 menu)</li>
+                <li>Then access is denied; user is returned to their regular menu</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>User Add — Duplicate Check:</strong>
+            <ul style="margin-top:6px">
+                <li>Given a user ID that already exists in USRSEC</li>
+                <li>When admin attempts to add user with that ID</li>
+                <li>Then duplicate error displayed; record NOT created</li>
+            </ul>
+        </div>
+        <div class="ac-box">
+            <strong>User Delete:</strong>
+            <ul style="margin-top:6px">
+                <li>Given admin confirms user deletion</li>
+                <li>When COUSR03C processes deletion</li>
+                <li>Then user record removed from USRSEC; confirmation shown</li>
+                <li>And deleted user can no longer authenticate</li>
+            </ul>
+        </div>
+    </section>
+</div>
+<footer><a href="../index.html">← Back to Index</a> &nbsp;|&nbsp; <em>CardDemo Documentation — 2026-03-12</em></footer>
+</body>
+</html>
