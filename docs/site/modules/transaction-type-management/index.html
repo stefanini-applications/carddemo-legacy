@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Type Management - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #fdf2f8; }
+        .container { max-width: 1024px; margin: 0 auto; padding: 24px 20px 40px; }
+        header { padding: 24px; border-radius: 16px; background: linear-gradient(135deg, #db2777 0%, #7c3aed 100%); color: white; }
+        section { margin-top: 24px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h1, h2, h3 { margin-top: 0; }
+        ul { padding-left: 20px; }
+        pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 32px; text-align: center; color: #475569; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 Transaction Type Management</h1>
+            <p>User story guide for the DB2-backed transaction metadata module.</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Enable admins to CRUD transaction-type reference data in DB2 and keep VSAM caches (used by posting jobs) synchronized.</p>
+            <p><strong>Business Context:</strong> Transaction-type metadata drives routing and rewards logic; this module shows how to manage that metadata relationally while feeding the high-performance VSAM posting engine.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Add a type:</strong> As an admin, I want to add a new transaction type via `CTTU` so the posting job can accept the new code.</li>
+                <li><strong>Batch export:</strong> As an operator, I want `TRANEXTR` to emit fresh VSAM files after DB2 updates so that the next posting run uses current data.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>DB2 DDL templates:</strong> `app/app-transaction-type-db2/ddl` already defines `CARDDEMO.TRANSACTION_TYPE` and `TRANSACTION_TYPE_CATEGORY`—reuses those for new stories.</li>
+                <li><strong>Batch extraction:</strong> `TRANEXTR`/`CREADB21` jobs provide automation for replicating DB2 tables to VSAM, reducing manual interventions.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple:</strong> Update the `CTTU` map to include an informational field.</li>
+                <li><strong>Medium:</strong> Add validation logic that ensures a transaction type description is not blank before hitting DB2.</li>
+                <li><strong>Complex:</strong> Change DB2 schema (new column or constraint) and re-run `CREADB21`, then refresh `TRANEXTR` to ship the data to VSAM.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li><strong>CICS Programs:</strong> `COTRTUPC` (add/edit via `CTTU`), `COTRTLIC` (list/update/delete via `CTLI`).</li>
+                <li><strong>DB2 Artifacts:</strong> `CARDDEMO.TRANSACTION_TYPE`, `CARDDEMO.TRANSACTION_TYPE_CATEGORY`, `dsntiapl` precompiler output, SQLCA error blocks in `app/app-transaction-type-db2/dcl`.</li>
+                <li><strong>Batch Jobs:</strong> `CREADB21` (creates table structure), `TRANEXTR` (exports DB2 data to VSAM), `MNTTRDB2` (batch maintenance program `COBTUPDT`).</li>
+            </ul>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>DB2 subsystem with precompiler; `CREADB21` uses DSNTEP4, `TRANEXTR` uses DSNTIAUL.</li>
+                <li>VSAM posting files refreshed by `TRANEXTR` so `CT00`/`CT01` never work against stale data.</li>
+                <li>Base CardDemo menu (`CA00`) exposes options 5 and 6 only after this module is installed.</li>
+            </ul>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>
+CICS Transactions:
+  CTTU - Transaction Type add/edit
+  CTLI - Transaction Type list/update/delete
+Batch Jobs:
+  CREADB21 - Create DB2 tables and load data
+  TRANEXTR - Extract DB2 tables into VSAM format
+  MNTTRDB2 (COBTUPDT) - Batch maintenance
+            </code></pre>
+        </section>
+
+        <section class="ac">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>New entries submitted via `CTTU` reach DB2 (`CARDDEMO.TRANSACTION_TYPE`) and appear after running `TRANEXTR` in the VSAM posting dataset.</li>
+                <li>Deletes triggered in `CTLI` respect the `DELETE RESTRICT` rule in `CARDDEMO.TRANSACTION_TYPE_CATEGORY` and emit a meaningful error message.</li>
+                <li>`TRANEXTR` runs nightly without locking VSAM files and leaves `TRANTYPE` dataset ready for the next `POSTTRAN` batch.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><em>Last updated: March 12, 2026</em></p>
+            <p><a href="../core-carddemo/index.html">← Back to Core CardDemo</a></p>
+        </footer>
+    </div>
+</body>
+</html>

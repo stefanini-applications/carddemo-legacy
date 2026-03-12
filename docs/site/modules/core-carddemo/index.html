@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core CardDemo - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: #f4f7fb; }
+        .container { max-width: 1024px; margin: 0 auto; padding: 24px 20px 40px; }
+        header { padding: 24px; border-radius: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        section { margin-top: 24px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h1, h2, h3 { margin-top: 0; }
+        ul { padding-left: 20px; }
+        pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 32px; text-align: center; color: #475569; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 Core CardDemo</h1>
+            <p>Guide for developing user stories that keep the foundational COBOL/CICS application stable and extensible.</p>
+        </header>
+
+        <section class="overview">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Deliver credit card management flows (signon, account/card/transaction CRUD, billing, statements) that anchor all other optional services.</p>
+            <p><strong>Business Context:</strong> This module is the heart of every modernization demo—the datasets and programs in `app/cbl`, `app/jcl`, `app/bms`, and `app/data` must remain consistent so downstream MQ and DB2 stories can rely on accurate account/transaction data.</p>
+        </section>
+
+        <section class="us-guide">
+            <h2>🎯 User Story Development Guide</h2>
+
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account Journeys:</strong> As a <em>cardholder</em>, I want to review my transactions via `CT01` so that I can confirm my activity before paying the bill.</li>
+                <li><strong>Batch Operations:</strong> As an <em>operator</em>, I want the `POSTTRAN` job to finish with no VSAM errors so that subsequent statements (`CREASTMT`) reflect the latest data.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Shared copybooks:</strong> `app/cpy` and `app/cpy-bms` copybooks define record layouts reused by forms like `COACTUPC` and lists such as `COUSR00`. Update once, apply multiple screens.</li>
+                <li><strong>BMS map set reuse:</strong> Screens follow the same 3270 pattern of PF keys (PF1 help, PF3 exit, PF5 search) defined in `app/bms`. Lean on `COSGN00`, `COACTVW`, and `COCRDS` layouts when adding new fields.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Text changes on `CCLI` or adding validation labels through existing maps.</li>
+                <li><strong>Medium (3-5 pts):</strong> Insert new fields into `COACTVWC` or `CT02` with PIC validation and dataset persistence.</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce new batch job or dataset (e.g., new `TRANEXTR` variant) that touches VSAM, JCL, and execution order.</li>
+            </ul>
+        </section>
+
+        <section class="technical">
+            <h2>🔧 Technical Foundation</h2>
+
+            <h3>🏗️ Key Components</h3>
+            <ul>
+                <li><strong>Programs:</strong> `COSGN00C`, `COMEN01C`, `COACTVWC`, `CT00`/`CT01`/`CT02`, `CBSTM03A/B` for statement generation.</li>
+                <li><strong>BMS Maps:</strong> Mapsets such as `COSGN00`, `COCRDSL`, `COACTUP`, `COUSR00` rendered via PF keys.</li>
+                <li><strong>Copybooks:</strong> `CMSTACT0`, `CVACT02Y`, `CVTRA06Y`, `CSUTLDTC` define shared structures for accounts, cards, and transactions.</li>
+            </ul>
+
+            <h3>🔗 Dependencies</h3>
+            <ul>
+                <li>CICS transaction server, RACF user database, and VSAM KSDS files located in `app/data`.</li>
+                <li>Batch orchestration with JCL under `app/jcl` and scheduler job decks (`app/scheduler`).</li>
+                <li>Optional MQ/DB2/IMS modules depend on this foundation; keep dataset layouts stable.</li>
+            </ul>
+
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>
+CICS Transactions:
+  CC00 - Signon (COSGN00C)
+  CM00 - Main menu (COMEN01C)
+  CAUP/CCUP - Account/card updates
+  CT00-CT02 - List/add transactions
+  CR00 - Transaction reporting
+  CB00 - Bill payment
+  CU00-CU03 - User maintenance
+Batch jobs:
+  POSTTRAN, TRANEXTR, CREASTMT, TRANIDX, OPENFIL, CLOSEFIL, COMBTRAN, DUSRSECJ
+            </code></pre>
+        </section>
+
+        <section class="ac">
+            <h2>✅ Acceptance Criteria Examples</h2>
+            <ul>
+                <li>Updates on `COACTVWC` persist to VSAM and show the new value when `CAVW` refreshes.</li>
+                <li>`POSTTRAN` must finish without abends so `CREASTMT` can start with the latest transaction file.</li>
+                <li>CU01 user creation requires RACF credentials and updates `app/data/USRSEC` dataset.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
