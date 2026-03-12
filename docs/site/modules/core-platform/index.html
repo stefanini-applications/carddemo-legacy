@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Platform - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f9fc; color: #1f2933; }
+        .container { max-width: 960px; margin: 0 auto; padding: 28px; }
+        .header { background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%); color: white; padding: 24px; border-radius: 12px; }
+        h1, h2, h3 { margin-top: 24px; }
+        section { margin-top: 20px; }
+        ul { margin-left: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        .card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 4px 12px rgba(15,23,42,0.08); }
+        pre { background: #0f172a; color: #e0f2fe; padding: 12px; border-radius: 6px; overflow: auto; }
+        footer { margin-top: 40px; font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Core Platform</h1>
+            <p>Guide for Developing User Stories</p>
+        </header>
+
+        <section class="overview card">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Deliver the 3270-based credit card management experience inside CICS, backed by VSAM datasets and batch jobs for posting, billing, and reporting.</p>
+            <p><strong>Business Context:</strong> US modernization programs use this module as the base layer that handles daily cardholder interactions, builds trust in data, and feeds optional integrations.</p>
+        </section>
+
+        <section class="us-guide card">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Account Visibility:</strong> As a cardholder, I want to view my current balances and recent transactions (COACTVW → COTRN00C) so that I can reconcile purchases before paying a bill.</li>
+                <li><strong>Billing and Reporting:</strong> As an operations analyst, I want POSTTRAN and INTCALC to finish before statement generation so that users see a consistent daily snapshot.</li>
+                <li><strong>User Management:</strong> As an admin, I want to add/update a user (`CU01`/`CU02`) so that access to core transactions is properly provisioned.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Shared Copybooks:</strong> Copybooks like `CVACT01Y` and `CVTRA06Y` standardize VSAM fields, reducing regression risk when multiple programs read the same data.</li>
+                <li><strong>Batch orchestration script:</strong> `scripts/run_full_batch.sh` sequentially submits the refresh/posting job chain with documented sleeps—reuse it for acceptance/regression runs.</li>
+                <li><strong>Mapset conventions:</strong> Screen flows follow `CO*` naming (COSGN* for signon, COACT* for account), so reuse BMS templates with consistent field anchors.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Update a single BMS field or label that maps directly to an existing copybook field.</li>
+                <li><strong>Medium (3-5 pts):</strong> Add a new VSAM field propagated to COBOL, BMS, and batch jobs (e.g., extend `DALYTRAN` and adjust `POSTTRAN`).</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce a new dataset plus integration with optional modules (e.g., new VSAM files consumed by authorizations or MQ).</li>
+            </ul>
+        </section>
+
+        <section class="technical card">
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>Signon/Navigation:</strong> `COSGN00C`/`CM00` manage authentication and the main menu.</li>
+                        <li><strong>Account/Card processing:</strong> `COACTVW`, `COCRDUPC`, `COCRDSLC` leverage `CVACT01Y`/`CVCRD01Y` layouts.</li>
+                        <li><strong>Transactions:</strong> `COTRN00C`/`COTRN02C` write `DALYTRAN` records via `CVTRA06Y` and call batch posting (`POSTTRAN`).</li>
+                        <li><strong>Billing & Reports:</strong> `COBIL00C`, `CBSTM03A`, and `TRANBKP` maintain reporting data.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li>VSAM datasets (`AWS.M2.CARDDEMO.ACCTDATA.PS`, `CARDDATA`, `DALYTRAN.PS`, etc.).</li>
+                        <li>JCL jobs (`POSTTRAN`, `CARDFILE`, `TRANIDX`) and `scripts/run_full_batch.sh` for automation.</li>
+                        <li>Copybooks (`CVACT01Y`, `CVTRA06Y`, `CSMSG01Y`) and BMS definitions in `app/bms/`.</li>
+                        <li>Admin menu options (CA00) enable optional module activation.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🌐 Public Interfaces</h3>
+                    <pre><code>CC00 (Signon) - `COSGN00C`
+CT00/CT02 - Transaction list/add (`COTRN00C`, `COTRN02C`)
+CB00 - Bill payment (`COBIL00C`)
+POSTTRAN / INTCALC / TRANIDX - Batch posting chain (JCL)
+scripts/run_full_batch.sh - Submits CLOSEFIL → POSTTRAN → INTCALC → TRANIDX → OPENFIL</code></pre>
+                </div>
+            </div>
+
+            <h3>📌 Acceptance Criteria Examples</h3>
+            <ul>
+                <li>Role-based menus visible only after successful `CC00` signon; unauthorized PF keys disabled.</li>
+                <li>`DALYTRAN` updates must produce matching backup files (`TRANBKP`) and catalog updates (`TRANIDX`).</li>
+                <li>Batch automation script logs job names and waits indicated seconds to keep JES throughput stable.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

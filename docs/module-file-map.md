@@ -1,0 +1,21 @@
+# Module File Map
+<!-- MODULE_FILE_MAP_START -->
+app/asm/** = core-platform
+app/bms/** = core-platform
+app/catlg/** = core-platform
+app/cbl/** = core-platform
+app/cpy/** = core-platform
+app/cpy-bms/** = core-platform
+app/csd/** = core-platform
+app/ctl/** = core-platform
+app/data/** = core-platform
+app/jcl/** = core-platform
+app/maclib/** = core-platform
+app/proc/** = core-platform
+app/scheduler/** = core-platform
+samples/** = core-platform
+scripts/** = core-platform
+app/app-authorization-ims-db2-mq/** = authorization
+app/app-transaction-type-db2/** = transaction-types
+app/app-vsam-mq/** = vsam-mq
+<!-- MODULE_FILE_MAP_END -->

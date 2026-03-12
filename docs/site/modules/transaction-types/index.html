@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Types - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0fdf4; color: #0f172a; }
+        .container { max-width: 960px; margin: 0 auto; padding: 28px; }
+        .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; padding: 24px; border-radius: 12px; }
+        section { margin-top: 20px; }
+        ul { margin-left: 20px; }
+        .card { background: white; border-radius: 8px; padding: 18px; box-shadow: 0 12px 28px rgba(15,23,42,0.16); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        pre { background: #0f172a; color: #e0f2fe; padding: 12px; border-radius: 6px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Transaction Types</h1>
+            <p>Guide for Developing User Stories</p>
+        </header>
+
+        <section class="card">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Provide DB2-backed metadata management for transaction types and categories, while keeping VSAM-friendly snapshots for performance-critical CICS flows.</p>
+            <p><strong>Business Context:</strong> Enables US teams to shift reference-data editing into DB2, decreasing reliance on embedded VSAM edits and paving the way for planned modernization.</p>
+        </section>
+
+        <section class="card">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Metadata CRUD:</strong> As an admin, I want to add a new transaction category through CTU/TU so that downstream billing programs have up-to-date codes.</li>
+                <li><strong>Cursor Navigation:</strong> As an auditor, I want CTLI to page with PF7/PF8 so that I can browse dozens of transaction types without hitting dataset limits.</li>
+                <li><strong>Batch Sync:</strong> As a batch operator, I want TRANEXTR to rebuild VSAM tables after DB2 edits so that core transactions remain in sync.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>DB2 static SQL templates:</strong> COBOL programs already include SQLCA handling and host variables—reuse the same structures when adding fields.</li>
+                <li><strong>Extraction jobs:</strong> `TRANEXTR` outputs VSAM-friendly files; extend the job only when new DB2 fields must be consumed by VSAM programs.</li>
+                <li><strong>Admin menu hooks:</strong> Options 5/6 (CTLI/CTTU) self-register when job `CREADB21` runs, reducing manual configuration steps.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Update field labels or descriptions on CTLI without touching DB2 DDL.</li>
+                <li><strong>Medium (3-5 pts):</strong> Extend the DB2 table by adding a new column and ensure the CICS programs and TRANEXTR job handle it.</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce cascading updates between DB2 transaction type tables and optional modules (authorization or MQ) while keeping VSAM in sync.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li>`CTLI`/`COTRTLIC`: DB2 cursor-driven listing with PF7/PF8 paging and delete/edit actions.</li>
+                        <li>`CTTU`/`COTRTUPC`: Add/edit form for transaction types.</li>
+                        <li>`CREADB21`: Initial DB2 object creation script (tables + indexes).</li>
+                        <li>`TRANEXTR` + `MNTTRDB2`: Batch jobs to sync VSAM files with DB2.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li>DB2 subsystem with plans, transactions, and SQLCA-aware COBOL programs.</li>
+                        <li>VSAM copies of transaction-type reference data consumed by core flows.</li>
+                        <li>Admin menu entries that surface CTLI/CTTU as options 5 and 6 after installation.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🌐 Public Interfaces</h3>
+                    <pre><code>CTLI (CICS) - List/update/delete transaction types (forward/backward cursors)
+CTTU (CICS) - Add/edit transaction types
+CREADB21 (JCL) - Create DB2 tables/translations
+TRANEXTR, MNTTRDB2 (JCL) - Sync DB2 rows with VSAM files
+COBTUPDT (Batch) - Process bulk transaction-type updates</code></pre>
+                </div>
+            </div>
+
+            <h3>📌 Acceptance Criteria Examples</h3>
+            <ul>
+                <li>DB2 SQL statements must check SQLCA before committing; failures trigger rollback and clear error messages.</li>
+                <li>Deletes are blocked when `TRANSACTION_TYPE_CATEGORY` rows reference the code (DELETE RESTRICT).  
+                    The UI shows the reason using existing error copybooks.</li>
+                <li>TRANEXTR output files match the VSAM structure expected by the core module and are refreshed after each CTLI/CTTU change.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

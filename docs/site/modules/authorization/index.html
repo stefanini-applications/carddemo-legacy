@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fef9f0; color: #111827; }
+        .container { max-width: 960px; margin: 0 auto; padding: 28px; }
+        .header { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); color: white; padding: 24px; border-radius: 12px; }
+        section { margin-top: 20px; }
+        ul { margin-left: 20px; }
+        .card { background: white; border-radius: 8px; padding: 18px; box-shadow: 0 10px 24px rgba(15,23,42,0.12); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        pre { background: #0f172a; color: #e0f2fe; padding: 12px; border-radius: 6px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Authorization</h1>
+            <p>Guide for Developing User Stories</p>
+        </header>
+
+        <section class="card">
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Handle MQ-driven credit card authorization workflows, persisting pending/eligible authorizations in IMS, and flagging fraud in DB2.</p>
+            <p><strong>Business Context:</strong> Acts as the fraud monitoring layer in US modernization stories—enabling integration tests, MQ-based approvals, and analyst screens.</p>
+        </section>
+
+        <section class="card">
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Real-time Authorizations:</strong> As a merchant simulator, I want MQ input/output so that I receive consistent approvals/declines from CardDemo.</li>
+                <li><strong>Analyst Workflow:</strong> As a fraud analyst, I want to mark authorizations as fraudulent (`CPVD` + `COPAUS2C`) so that DB2 holds accurate analytics.</li>
+                <li><strong>Cleanup:</strong> As an operator, I want batch job `CBPAUP0J` to drop old authorizations so that IMS indexes stay lean.</li>
+            </ul>
+
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>MQ Schema De Facto:</strong> Reuse the CSV order (AUTH-DATE→TRANSACTION-ID) for all new MQ integrations to avoid parsing overhead.</li>
+                <li><strong>IMS Copybooks:</strong> `CIPAUSMY` and `CIPAUDTY` provide ready-made segment layouts for summary/detail screens.</li>
+                <li><strong>DB2 Table Template:</strong> `AUTHFRDS` DDL already includes fraud flags and indexes—extend only when new fraud dimensions are needed.</li>
+            </ul>
+
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add an MQ field to the existing request CSV and display it on the summary screen.</li>
+                <li><strong>Medium (3-5 pts):</strong> Extend IMS segments or DB2 table with new attributes and ensure MQ processor (`COPAUA0C`) includes them in two-phase commit logic.</li>
+                <li><strong>Complex (5-8 pts):</strong> Wire a new MQ channel plus downstream service (e.g., call an external fraud scoring service) while keeping `CBPAUP0J` synchronized.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li>`COPAUA0C`: MQ-triggered authorization request handler (reads `CCPAURQY`, `CCPAURLY`).</li>
+                        <li>`COPAUS0C`/`COPAUS1C`: BMS map-based summary/detail displays (`COPAU00`/`COPAU01`).</li>
+                        <li>`COPAUS2C`: Fraud marking that writes to DB2 `AUTHFRDS` via two-phase commit.</li>
+                        <li>`CBPAUP0C`: Batch purge job for expired IMS entries.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li>IMS HIDAM structures (`DBPAUTP0`, `DBPAUTX0`, segments `PAUTSUM0`, `PAUTDTL1`).</li>
+                        <li>DB2 table `AUTHFRDS` + unique index `XAUTHFRD` (fraud analytics).</li>
+                        <li>MQ queues `AWS.M2.CARDDEMO.PAUTH.REQUEST`/`.REPLY` and CICS MQCONN/MQQUEUE definitions.</li>
+                        <li>Optional core datasets for account cross-references (`CVCRD01Y`).</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🌐 Public Interfaces</h3>
+                    <pre><code>MQ Queue (Request) - AWS.M2.CARDDEMO.PAUTH.REQUEST
+MQ Queue (Reply)   - AWS.M2.CARDDEMO.PAUTH.REPLY
+CICS Transaction   - CP00 (COPAUA0C): Authorization processor
+CICS Screens       - CPVS (COPAUS0C), CPVD (COPAUS1C)
+Batch Job          - CBPAUP0J (expired authorization purge)</code></pre>
+                </div>
+            </div>
+
+            <h3>📌 Acceptance Criteria Examples</h3>
+            <ul>
+                <li>MQ CSV requests must parse in the exact column order defined in the README; missing fields result in rejection and MQ exception logging.</li>
+                <li>`COPAUS2C` markers to DB2 use SQLCA error checking and keep IMS updates in a two-phase commit.</li>
+                <li>`CBPAUP0J` removes expired entries and writes a summary to the JCL job log for auditing.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
