@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardDemo — Mainframe Application Documentation</title>
+    <style>
+        :root {
+            --primary: #0f2d5e;
+            --primary-dark: #081a38;
+            --accent: #1a73e8;
+            --accent-light: #4a9eff;
+            --optional: #6d28d9;
+            --optional-light: #8b5cf6;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --tag-bg: #e8f0fe;
+            --tag-color: #1a56db;
+            --tag-opt-bg: #ede9fe;
+            --tag-opt-color: #6d28d9;
+            --shadow: 0 2px 8px rgba(15, 45, 94, 0.08);
+            --shadow-hover: 0 8px 28px rgba(15, 45, 94, 0.18);
+            --radius: 12px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Header ── */
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, #1a3a6e 100%);
+            color: #fff;
+            padding: 3.5rem 2rem 2.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 70% 40%, rgba(26,115,232,0.25) 0%, transparent 60%),
+                        radial-gradient(ellipse at 20% 80%, rgba(109,40,217,0.15) 0%, transparent 55%);
+            pointer-events: none;
+        }
+
+        header .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: rgba(255,255,255,0.9);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.9rem;
+            border-radius: 999px;
+            margin-bottom: 1.1rem;
+        }
+
+        header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 0.6rem;
+        }
+
+        header p.subtitle {
+            font-size: 1.05rem;
+            color: rgba(255,255,255,0.75);
+            font-weight: 400;
+        }
+
+        /* ── Intro ── */
+        .intro {
+            max-width: 820px;
+            margin: 2.5rem auto 0;
+            padding: 0 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* ── Stats bar ── */
+        .stats-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            max-width: 900px;
+            margin: 2.2rem auto 0;
+            padding: 0 2rem;
+        }
+
+        .stat {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.6rem;
+            text-align: center;
+            flex: 1 1 160px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-number {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1.1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 0.2rem;
+        }
+
+        /* ── Section heading ── */
+        .section-heading {
+            max-width: 1100px;
+            margin: 3rem auto 1.2rem;
+            padding: 0 2rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .section-heading::after {
+            content: "";
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to right, var(--border), transparent);
+            border-radius: 1px;
+        }
+
+        /* ── Module grid ── */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem;
+        }
+
+        @media (max-width: 900px) {
+            .module-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 580px) {
+            .module-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Module card ── */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem 1.5rem 1.3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            box-shadow: var(--shadow);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .card.optional::before {
+            background: linear-gradient(90deg, var(--optional), var(--optional-light));
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--accent);
+        }
+
+        .card.optional:hover {
+            border-color: var(--optional-light);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .card-icon {
+            font-size: 1.9rem;
+            line-height: 1;
+        }
+
+        .optional-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: var(--tag-opt-bg);
+            color: var(--optional);
+            border: 1px solid rgba(109,40,217,0.2);
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.01em;
+        }
+
+        .card.optional .card-title {
+            color: var(--optional);
+        }
+
+        .card-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.55;
+            flex: 1;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.3rem;
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            background: var(--tag-bg);
+            color: var(--tag-color);
+            letter-spacing: 0.03em;
+        }
+
+        .card.optional .tag {
+            background: var(--tag-opt-bg);
+            color: var(--tag-opt-color);
+        }
+
+        .card-arrow {
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-top: 0.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .card.optional .card-arrow {
+            color: var(--optional-light);
+        }
+
+        /* ── Footer ── */
+        footer {
+            margin-top: auto;
+            background: var(--primary-dark);
+            color: rgba(255,255,255,0.55);
+            text-align: center;
+            padding: 1.4rem 2rem;
+            font-size: 0.82rem;
+        }
+
+        footer strong {
+            color: rgba(255,255,255,0.8);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="badge">AWS Mainframe Migration Demo</div>
+    <h1>CardDemo Mainframe Application</h1>
+    <p class="subtitle">Credit Card Management System — COBOL/CICS Documentation</p>
+</header>
+
+<p class="intro">
+    CardDemo is a COBOL/CICS mainframe reference application demonstrating a full-featured credit card
+    management system. It covers online transaction processing via CICS, batch posting and reporting via
+    JCL, and optional extensions for IMS/DB2/MQ integration. Use the module cards below to navigate
+    the documentation for each functional area.
+</p>
+
+<div class="stats-bar">
+    <div class="stat">
+        <div class="stat-number">24</div>
+        <div class="stat-label">CICS Transactions</div>
+    </div>
+    <div class="stat">
+        <div class="stat-number">11</div>
+        <div class="stat-label">Batch Jobs</div>
+    </div>
+    <div class="stat">
+        <div class="stat-number">11</div>
+        <div class="stat-label">VSAM Files</div>
+    </div>
+    <div class="stat">
+        <div class="stat-number">40+</div>
+        <div class="stat-label">COBOL Programs</div>
+    </div>
+</div>
+
+<div class="section-heading">Core Modules</div>
+
+<div class="module-grid">
+
+    <a class="card" href="modules/authentication/index.html">
+        <div class="card-header">
+            <span class="card-icon">🔐</span>
+        </div>
+        <div class="card-title">Authentication</div>
+        <div class="card-desc">User sign-on, session management, and role-based menu navigation.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">RACF</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/accounts/index.html">
+        <div class="card-header">
+            <span class="card-icon">💳</span>
+        </div>
+        <div class="card-title">Accounts</div>
+        <div class="card-desc">Account view and update operations for credit card accounts.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">VSAM</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/credit-cards/index.html">
+        <div class="card-header">
+            <span class="card-icon">🃏</span>
+        </div>
+        <div class="card-title">Credit Cards</div>
+        <div class="card-desc">Credit card listing, details view, and card management.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">VSAM</span>
+            <span class="tag">AIX</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/transactions/index.html">
+        <div class="card-header">
+            <span class="card-icon">💱</span>
+        </div>
+        <div class="card-title">Transactions</div>
+        <div class="card-desc">Transaction listing, details, and manual transaction entry.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">VSAM</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/bill-payment/index.html">
+        <div class="card-header">
+            <span class="card-icon">💰</span>
+        </div>
+        <div class="card-title">Bill Payment</div>
+        <div class="card-desc">Bill payment processing and payment history.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">VSAM</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/reports/index.html">
+        <div class="card-header">
+            <span class="card-icon">📊</span>
+        </div>
+        <div class="card-title">Reports</div>
+        <div class="card-desc">Online report triggers and batch statement/report generation.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">Batch</span>
+            <span class="tag">JCL</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/user-management/index.html">
+        <div class="card-header">
+            <span class="card-icon">👥</span>
+        </div>
+        <div class="card-title">User Management</div>
+        <div class="card-desc">Admin CRUD operations for system user accounts.</div>
+        <div class="card-tags">
+            <span class="tag">CICS</span>
+            <span class="tag">VSAM</span>
+            <span class="tag">Admin</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card" href="modules/batch-processing/index.html">
+        <div class="card-header">
+            <span class="card-icon">⚙️</span>
+        </div>
+        <div class="card-title">Batch Processing</div>
+        <div class="card-desc">Core batch jobs: transaction posting, interest calculation, statements.</div>
+        <div class="card-tags">
+            <span class="tag">JCL</span>
+            <span class="tag">COBOL</span>
+            <span class="tag">VSAM</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+</div>
+
+<div class="section-heading">Optional Modules</div>
+
+<div class="module-grid">
+
+    <a class="card optional" href="modules/authorization/index.html">
+        <div class="card-header">
+            <span class="card-icon">🛡️</span>
+            <span class="optional-badge">Optional</span>
+        </div>
+        <div class="card-title">Authorization</div>
+        <div class="card-desc">Pending authorization management via IMS DB, DB2, and MQ.</div>
+        <div class="card-tags">
+            <span class="tag">Optional</span>
+            <span class="tag">IMS</span>
+            <span class="tag">DB2</span>
+            <span class="tag">MQ</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card optional" href="modules/transaction-type-db2/index.html">
+        <div class="card-header">
+            <span class="card-icon">🗄️</span>
+            <span class="optional-badge">Optional</span>
+        </div>
+        <div class="card-title">Transaction Type DB2</div>
+        <div class="card-desc">Transaction type and category management via DB2.</div>
+        <div class="card-tags">
+            <span class="tag">Optional</span>
+            <span class="tag">DB2</span>
+            <span class="tag">CICS</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+    <a class="card optional" href="modules/mq-integration/index.html">
+        <div class="card-header">
+            <span class="card-icon">📨</span>
+            <span class="optional-badge">Optional</span>
+        </div>
+        <div class="card-title">MQ Integration</div>
+        <div class="card-desc">MQ-based date and account inquiry integration.</div>
+        <div class="card-tags">
+            <span class="tag">Optional</span>
+            <span class="tag">MQ</span>
+            <span class="tag">CICS</span>
+        </div>
+        <div class="card-arrow">View module →</div>
+    </a>
+
+</div>
+
+<footer>
+    <strong>CardDemo</strong> — AWS Mainframe Migration Demo Application
+</footer>
+
+</body>
+</html>
