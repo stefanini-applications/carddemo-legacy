@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authentication - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>🔐 Authentication</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>Controls application entry via the <code>CC00</code> CICS transaction. Reads the <code>USRSEC</code> VSAM security file to validate credentials. Routes admin users (<code>USER-TYPE=A</code>) to the Admin Menu (<code>COADM01C</code>) and regular users (<code>USER-TYPE=U</code>) to the Main Menu (<code>COMEN01C</code>).</p>
+    <h3>Default Test Credentials</h3>
+    <table>
+      <tr><th>User ID</th><th>Password</th><th>Type</th><th>Routed To</th></tr>
+      <tr><td><code>ADMIN001</code></td><td><code>PASSWORD</code></td><td>A (Admin)</td><td>Admin Menu (COADM01C)</td></tr>
+      <tr><td><code>USER0001</code></td><td><code>PASSWORD</code></td><td>U (User)</td><td>Main Menu (COMEN01C)</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>Programs</h3>
+    <ul>
+      <li><code>COSGN00C</code> — Signon logic: validates USER-ID/PASSWORD against USRSEC VSAM</li>
+      <li><code>COMEN01C</code> — Main Menu: entry point for regular users</li>
+      <li><code>COADM01C</code> — Admin Menu: entry point for admin users</li>
+    </ul>
+
+    <h3>BMS Maps</h3>
+    <ul>
+      <li><code>COSGN00</code> — Signon screen map</li>
+      <li><code>COMEN01</code> — Main menu map</li>
+      <li><code>COADM01</code> — Admin menu map</li>
+    </ul>
+
+    <h3>CICS Transaction</h3>
+    <pre>CC00  →  COSGN00C</pre>
+
+    <h3>Data Stores</h3>
+    <table>
+      <tr><th>File</th><th>Type</th><th>Description</th><th>Key</th></tr>
+      <tr><td><code>USRSEC</code></td><td>VSAM KSDS</td><td>User security file — credentials and type</td><td>USER-ID (PIC X(08))</td></tr>
+    </table>
+    <p style="margin-top:8px;">Record length: 80-byte FB records.</p>
+
+    <h3>Copybooks</h3>
+    <ul>
+      <li><code>CSUSR01Y</code> — User record layout (USER-ID, USER-PASSWORD, USER-TYPE)</li>
+      <li><code>COCOM01Y</code> — Commarea for session context (carries state between programs)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Notes</th></tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to log in with my user ID and password so that I can securely access my account.</td>
+        <td><span class="tag tag-green">Core</span></td>
+      </tr>
+      <tr>
+        <td>Admin</td>
+        <td>As an admin, I want to be routed to the Admin Menu after login so that I can access administrative functions.</td>
+        <td><span class="tag tag-blue">Routing</span></td>
+      </tr>
+      <tr>
+        <td>Security Officer</td>
+        <td>As a security officer, I want failed login attempts to display an error message so that unauthorized access is prevented.</td>
+        <td><span class="tag tag-orange">Security</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>Reference the CICS transaction (<code>CC00</code>) and the routing program (<code>COSGN00C</code>) in technical notes.</li>
+      <li>Specify the VSAM file (<code>USRSEC</code>) and key field (<code>USER-ID</code>) when stories involve credential data.</li>
+      <li>Always distinguish between <code>USER-TYPE=A</code> and <code>USER-TYPE=U</code> routing outcomes.</li>
+      <li>Use the commarea copybook <code>COCOM01Y</code> reference when stories affect session state.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>Password change (USRSEC update only)</li>
+          <li>Login screen cosmetic change (BMS map update)</li>
+          <li>Add descriptive error text to signon screen</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Add account lockout after N failed login attempts</li>
+          <li>Add new user role beyond A/U (requires routing logic change)</li>
+          <li>Session timeout with configurable inactivity period</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>Integrate with RACF passtickets for SSO</li>
+          <li>SSO integration via MQ message-based token exchange</li>
+          <li>Audit trail of all login events to a new VSAM or DB2 table</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>Valid USER-ID and PASSWORD exist in USRSEC</td>
+        <td>CC00 is entered and credentials submitted</td>
+        <td>User is routed to the Main Menu (COMEN01C)</td>
+      </tr>
+      <tr>
+        <td>Admin credentials (USER-TYPE=A) are entered</td>
+        <td>CC00 is entered and credentials submitted</td>
+        <td>User is routed to the Admin Menu (COADM01C)</td>
+      </tr>
+      <tr>
+        <td>Invalid password is entered for a valid USER-ID</td>
+        <td>Signon screen is submitted</td>
+        <td>Error message is displayed; session is not created</td>
+      </tr>
+      <tr>
+        <td>USER-ID does not exist in USRSEC</td>
+        <td>Signon screen is submitted</td>
+        <td>Generic error message displayed (no user enumeration)</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>Routing:</strong> <code>USER-TYPE=A</code> → <code>COADM01C</code> (Admin Menu); <code>USER-TYPE=U</code> → <code>COMEN01C</code> (Main Menu).</li>
+      <li><strong>Failed auth:</strong> Stays on the signon screen; no partial session is created.</li>
+      <li><strong>Session state:</strong> CICS commarea (<code>COCOM01Y</code>) carries session context between programs throughout the user session.</li>
+      <li><strong>Credentials:</strong> USER-ID is 8 characters, PASSWORD is 8 characters; both stored in USRSEC. Password is currently stored as plain text (modernization target).</li>
+      <li><strong>VSAM record:</strong> USRSEC is 80-byte fixed-block; keyed on USER-ID (first 8 bytes).</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>

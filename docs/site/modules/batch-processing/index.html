@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch Processing - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+.flow-step { background: #f0f4f8; border-left: 4px solid #0f3460; padding: 10px 14px; margin: 4px 0; border-radius: 0 6px 6px 0; font-family: 'Courier New', monospace; font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>⚙️ Batch Processing</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>The nightly batch cycle handles transaction posting (<code>CBTRN02C</code> / <code>POSTTRAN</code>), interest calculation (<code>CBACT04C</code> / <code>INTCALC</code>), statement generation (<code>CBSTM03A</code> / <code>CREASTMT</code>), report generation (<code>CBTRN03C</code> / <code>TRANREPT</code>), and file maintenance (close/open). Uses JCL, SORT, IDCAMS, and COBOL batch programs. Scheduler definitions available in <code>app/scheduler/</code> (CA7 and Control-M formats).</p>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>COBOL Batch Programs</h3>
+    <table>
+      <tr><th>Program</th><th>Job Name</th><th>Description</th></tr>
+      <tr><td><code>CBTRN01C</code></td><td></td><td>Transaction validation</td></tr>
+      <tr><td><code>CBTRN02C</code></td><td>POSTTRAN</td><td>Transaction posting to ACCTFILE and TRANSACT</td></tr>
+      <tr><td><code>CBTRN03C</code></td><td>TRANREPT</td><td>Transaction detail report</td></tr>
+      <tr><td><code>CBACT04C</code></td><td>INTCALC</td><td>Interest calculation (uses DISCGRP rates)</td></tr>
+      <tr><td><code>CBSTM03A/B</code></td><td>CREASTMT</td><td>Account statement generation (text + HTML)</td></tr>
+      <tr><td><code>CBACT01C/02C/03C</code></td><td></td><td>Account file maintenance utilities</td></tr>
+      <tr><td><code>CBCUS01C</code></td><td></td><td>Customer file maintenance</td></tr>
+      <tr><td><code>CBEXPORT</code></td><td></td><td>Data export utility</td></tr>
+      <tr><td><code>CBIMPORT</code></td><td></td><td>Data import utility</td></tr>
+      <tr><td><code>COBSWAIT</code></td><td></td><td>Batch wait/timer utility</td></tr>
+      <tr><td><code>CSUTLDTC</code></td><td></td><td>Date conversion utility</td></tr>
+    </table>
+
+    <h3>Assembler Programs</h3>
+    <ul>
+      <li><code>MVSWAIT</code> — System timer for batch wait steps</li>
+      <li><code>COBDATFT</code> — Date format conversion</li>
+    </ul>
+
+    <h3>Nightly Batch Job Sequence</h3>
+    <div class="flow-step">1. CLOSEFIL — Close CICS-managed files for batch update</div>
+    <div class="flow-step">2. ACCTFILE — Account file refresh / backup</div>
+    <div class="flow-step">3. CARDFILE — Card file refresh / backup</div>
+    <div class="flow-step">4. CUSTFILE — Customer file refresh / backup</div>
+    <div class="flow-step">5. XREFFILE — Cross-reference file refresh / backup</div>
+    <div class="flow-step">6. TRANBKP — Transaction file backup (GDG)</div>
+    <div class="flow-step">7. TRANCATG — Transaction category refresh</div>
+    <div class="flow-step">8. TRANTYPE — Transaction type refresh</div>
+    <div class="flow-step">9. DISCGRP — Disclosure group / interest rate refresh</div>
+    <div class="flow-step">10. TCATBALF — Category balance file refresh</div>
+    <div class="flow-step">11. DUSRSECJ — User security file refresh</div>
+    <div class="flow-step">12. POSTTRAN (CBTRN02C) — Post daily transactions to accounts</div>
+    <div class="flow-step">13. INTCALC (CBACT04C) — Calculate and apply interest</div>
+    <div class="flow-step">14. COMBTRAN — Combine transaction files</div>
+    <div class="flow-step">15. CREASTMT (CBSTM03A) — Generate account statements</div>
+    <div class="flow-step">16. TRANREPT (CBTRN03C) — Generate transaction report</div>
+    <div class="flow-step">17. OPENFIL — Re-open CICS-managed files</div>
+
+    <h3>Key Input Files</h3>
+    <table>
+      <tr><th>File</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>DALYTRAN</code></td><td>Sequential</td><td>Daily transaction input — arrives from upstream systems</td></tr>
+      <tr><td><code>ACCTFILE</code></td><td>VSAM KSDS</td><td>Account master — updated by POSTTRAN and INTCALC</td></tr>
+      <tr><td><code>DISCGRP</code></td><td>VSAM KSDS</td><td>Disclosure group interest rates — read by INTCALC</td></tr>
+      <tr><td><code>TCATBALF</code></td><td>VSAM KSDS</td><td>Category balance file — updated by posting</td></tr>
+    </table>
+
+    <h3>Key Output Files</h3>
+    <table>
+      <tr><th>File</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>DALYREJS</code></td><td>Sequential</td><td>Rejected transactions with reason codes</td></tr>
+      <tr><td><code>TCATBALF</code></td><td>VSAM KSDS</td><td>Updated category balances</td></tr>
+      <tr><td><code>STMTFILE</code></td><td>Sequential</td><td>Plain text account statements</td></tr>
+      <tr><td><code>HTMLFILE</code></td><td>Sequential</td><td>HTML account statements</td></tr>
+      <tr><td><code>TRANREPT</code></td><td>Sequential</td><td>Transaction detail report</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Tags</th></tr>
+      <tr>
+        <td>System Operator</td>
+        <td>As a system operator, I want to run the nightly batch cycle so that all daily transactions are posted to accounts.</td>
+        <td><span class="tag tag-blue">Operations</span></td>
+      </tr>
+      <tr>
+        <td>Product Owner</td>
+        <td>As a product owner, I want interest calculated automatically so that balances are always accurate after each cycle.</td>
+        <td><span class="tag tag-green">Finance</span></td>
+      </tr>
+      <tr>
+        <td>Auditor</td>
+        <td>As an auditor, I want rejected transactions captured in DALYREJS so that I can investigate posting failures.</td>
+        <td><span class="tag tag-orange">Audit</span></td>
+      </tr>
+      <tr>
+        <td>Operations Manager</td>
+        <td>As an operations manager, I want a batch scheduler (CA7/Control-M) definition so that jobs run at the correct time.</td>
+        <td><span class="tag tag-blue">Scheduling</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>Always specify which batch job name (e.g., <code>POSTTRAN</code>, <code>INTCALC</code>) is being referenced, not just the program name.</li>
+      <li>Job dependency stories must reference the sequence — <code>CLOSEFIL</code> before file updates, <code>OPENFIL</code> last.</li>
+      <li>GDG stories should note that generation versioning requires IDCAMS define steps.</li>
+      <li>Stories involving <code>DISCGRP</code> interest rates must specify the link via <code>ACCT-GROUP-ID</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>Add a new SORT step to combine two sequential files</li>
+          <li>Run file refresh JCL (CLOSEFIL/OPENFIL cycle)</li>
+          <li>Add a new reason code to DALYREJS reject processing</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Modify interest calculation rate lookup in CBACT04C</li>
+          <li>Add a new reject reason code with corresponding validation</li>
+          <li>Parameterize POSTTRAN to support multiple processing dates</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>New batch program for export to S3 (cloud modernization)</li>
+          <li>End-to-end batch cycle refactoring with dependency management</li>
+          <li>GDG version management changes (generation count, expiry)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>DALYTRAN contains valid transaction records</td>
+        <td>POSTTRAN (CBTRN02C) runs</td>
+        <td>Account balances in ACCTFILE reflect all posted transaction amounts</td>
+      </tr>
+      <tr>
+        <td>DALYTRAN contains a record with an unknown card number</td>
+        <td>POSTTRAN (CBTRN02C) runs</td>
+        <td>The invalid record is written to DALYREJS with an appropriate reason code</td>
+      </tr>
+      <tr>
+        <td>All active accounts exist in ACCTFILE with valid ACCT-GROUP-ID</td>
+        <td>INTCALC (CBACT04C) runs</td>
+        <td>ACCT-CURR-BAL is updated with interest per the applicable DISCGRP rate</td>
+      </tr>
+      <tr>
+        <td>CLOSEFIL has completed successfully</td>
+        <td>File refresh jobs (ACCTFILE, CARDFILE, etc.) run</td>
+        <td>All VSAM files are updated without CICS conflict</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>File management:</strong> <code>CLOSEFIL</code> must run before any batch file refresh jobs; <code>OPENFIL</code> re-enables CICS file access at the end of the cycle.</li>
+      <li><strong>Transaction validation:</strong> <code>POSTTRAN</code> validates card number via <code>XREFFILE</code> (CARDXREF) before posting to accounts.</li>
+      <li><strong>Interest rates:</strong> <code>INTCALC</code> uses <code>DISCGRP</code> disclosure group rates; rate is selected via <code>ACCT-GROUP-ID</code> on the account record.</li>
+      <li><strong>Rejects:</strong> Invalid DALYTRAN records are written to <code>DALYREJS</code> sequential file with a reason code; they are not re-processed automatically.</li>
+      <li><strong>GDGs:</strong> Backup files (e.g., <code>TRANBKP</code>) use Generation Data Groups for versioned backups; managed via IDCAMS.</li>
+      <li><strong>Scheduler:</strong> Batch scheduler definitions (CA7 and Control-M formats) are available in <code>app/scheduler/</code>.</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accounts - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>🏦 Accounts</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>Provides view (<code>CAVW</code> / <code>COACTVWC</code>) and update (<code>CAUP</code> / <code>COACTUPC</code>) capabilities for credit card account records stored in the <code>ACCTFILE</code> VSAM KSDS (300-byte records). Account-to-card cross-reference is maintained in <code>CARDXREF</code>. Account balances are updated by nightly batch programs (<code>CBTRN02C</code>, <code>CBACT04C</code>).</p>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>Programs</h3>
+    <ul>
+      <li><code>COACTVWC</code> — View account details (read-only)</li>
+      <li><code>COACTUPC</code> — Update account fields (with validation)</li>
+    </ul>
+
+    <h3>BMS Maps</h3>
+    <ul>
+      <li><code>COACTVW</code> — Account view screen</li>
+      <li><code>COACTUP</code> — Account update screen</li>
+    </ul>
+
+    <h3>CICS Transactions</h3>
+    <pre>CAVW  →  COACTVWC
+CAUP  →  COACTUPC</pre>
+
+    <h3>Data Stores</h3>
+    <table>
+      <tr><th>File</th><th>Type</th><th>Description</th><th>Primary Key</th></tr>
+      <tr><td><code>ACCTFILE</code></td><td>VSAM KSDS</td><td>Account master file — 300-byte records</td><td>ACCT-ID (PIC 9(11))</td></tr>
+      <tr><td><code>CARDXREF</code></td><td>VSAM AIX</td><td>Card-to-account cross-reference</td><td>CARD-NUM (PIC X(16))</td></tr>
+    </table>
+
+    <h3>Key Account Fields</h3>
+    <table>
+      <tr><th>Field</th><th>Picture</th><th>Description</th></tr>
+      <tr><td><code>ACCT-ID</code></td><td>PIC 9(11)</td><td>Account identifier (primary key)</td></tr>
+      <tr><td><code>ACCT-ACTIVE-STATUS</code></td><td>PIC X(01)</td><td>Y = active, N = inactive</td></tr>
+      <tr><td><code>ACCT-CURR-BAL</code></td><td>PIC S9(10)V99</td><td>Current balance (signed)</td></tr>
+      <tr><td><code>ACCT-CREDIT-LIMIT</code></td><td>PIC S9(10)V99</td><td>Total credit limit</td></tr>
+      <tr><td><code>ACCT-CASH-CREDIT-LIMIT</code></td><td>PIC S9(10)V99</td><td>Cash advance credit limit</td></tr>
+      <tr><td><code>ACCT-OPEN-DATE</code></td><td>PIC X(10)</td><td>Account open date</td></tr>
+      <tr><td><code>ACCT-EXPIRAION-DATE</code></td><td>PIC X(10)</td><td>Account expiration date</td></tr>
+      <tr><td><code>ACCT-GROUP-ID</code></td><td>PIC X(10)</td><td>Links to DISCGRP for interest rates</td></tr>
+    </table>
+
+    <h3>Copybooks</h3>
+    <ul>
+      <li><code>CVACT01Y</code> — Account record layout</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Tags</th></tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to view my current balance so that I can track my available credit.</td>
+        <td><span class="tag tag-green">Read-only</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to see my credit limit so that I know my spending capacity.</td>
+        <td><span class="tag tag-green">Read-only</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to update my billing zip code so that my address is current.</td>
+        <td><span class="tag tag-blue">Update</span></td>
+      </tr>
+      <tr>
+        <td>Admin</td>
+        <td>As an admin, I want to update account credit limits so that I can manage risk.</td>
+        <td><span class="tag tag-orange">Admin</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>Distinguish clearly between view-only (<code>COACTVWC</code>) and update (<code>COACTUPC</code>) scenarios.</li>
+      <li>Reference <code>ACCT-ACTIVE-STATUS</code> in acceptance criteria; inactive accounts behave differently.</li>
+      <li>Note that balance is updated by batch (nightly); real-time balance reflects last batch cycle.</li>
+      <li>Credit limit changes may have downstream impact on batch interest calculation (<code>CBACT04C</code>).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>View account details (read-only screen)</li>
+          <li>Display available credit calculation on screen</li>
+          <li>Add a new display-only field to the view map</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Update billing fields (address, zip) with format validation</li>
+          <li>Add new updatable field to COACTUPC with VSAM rewrite</li>
+          <li>Status change (active → inactive) with confirmation prompt</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>Credit limit change with cross-system notification via MQ</li>
+          <li>Account status change with downstream batch impact analysis</li>
+          <li>Account merge or consolidation with cross-reference update</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>ACCT-ACTIVE-STATUS = Y for the requested account</td>
+        <td>User views account via CAVW</td>
+        <td>Current balance and credit limit are displayed correctly</td>
+      </tr>
+      <tr>
+        <td>An invalid zip code format is entered</td>
+        <td>Account update is submitted via CAUP</td>
+        <td>Error message is displayed and the ACCTFILE record is not updated</td>
+      </tr>
+      <tr>
+        <td>Batch job posts new transactions to the account balance</td>
+        <td>User views the account on the following day</td>
+        <td>Balance reflects all transactions posted by the nightly batch</td>
+      </tr>
+      <tr>
+        <td>ACCT-ACTIVE-STATUS = N</td>
+        <td>User attempts to update a field on the account</td>
+        <td>Update is rejected with an appropriate error message</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>Balance calculation:</strong> Current balance = prior balance + cycle credits − cycle debits; updated by batch (<code>CBTRN02C</code>, <code>CBACT04C</code>).</li>
+      <li><strong>Interest rates:</strong> <code>ACCT-GROUP-ID</code> links to <code>DISCGRP</code> disclosure group file for applicable interest rate.</li>
+      <li><strong>Account status:</strong> Account must be active (<code>ACCT-ACTIVE-STATUS=Y</code>) for transactions to be authorized and posted.</li>
+      <li><strong>Cross-reference:</strong> <code>CARDXREF</code> maps cards to accounts; multiple cards may belong to one account.</li>
+      <li><strong>Record size:</strong> ACCTFILE is 300-byte fixed-block KSDS; updates are full-record rewrites.</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>

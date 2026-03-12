@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bill Payment - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>💵 Bill Payment</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>Provides a single-screen bill payment capability via CICS transaction <code>CB00</code> / program <code>COBIL00C</code>. The cardholder submits a payment amount that reduces the current cycle debit balance on the account. The program reads the account from <code>ACCTFILE</code> and resolves the account lookup from <code>CARDXREF</code>. Each payment is also recorded as a transaction in the <code>TRANSACT</code> VSAM file.</p>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>Program</h3>
+    <ul>
+      <li><code>COBIL00C</code> — Bill payment processing: validates amount, updates ACCTFILE, writes to TRANSACT</li>
+    </ul>
+
+    <h3>BMS Map</h3>
+    <ul>
+      <li><code>COBIL00</code> — Bill payment screen</li>
+    </ul>
+
+    <h3>CICS Transaction</h3>
+    <pre>CB00  →  COBIL00C</pre>
+
+    <h3>Data Stores</h3>
+    <table>
+      <tr><th>File</th><th>Access</th><th>Description</th></tr>
+      <tr><td><code>ACCTFILE</code></td><td>Read + Update</td><td>Account master — payment updates ACCT-CURR-CYC-CREDIT field</td></tr>
+      <tr><td><code>CARDXREF</code></td><td>Read</td><td>Cross-reference used to look up account ID from card number</td></tr>
+      <tr><td><code>TRANSACT</code></td><td>Write</td><td>Payment is recorded as a transaction record</td></tr>
+    </table>
+
+    <h3>Key Fields Affected by Payment</h3>
+    <table>
+      <tr><th>Field</th><th>File</th><th>Effect</th></tr>
+      <tr><td><code>ACCT-CURR-CYC-CREDIT</code></td><td>ACCTFILE</td><td>Incremented by payment amount</td></tr>
+      <tr><td><code>ACCT-CURR-BAL</code></td><td>ACCTFILE</td><td>Recalculated to reflect payment (by batch)</td></tr>
+      <tr><td><code>TRAN-AMT</code></td><td>TRANSACT</td><td>Payment stored as negative amount (credit)</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Tags</th></tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to make a bill payment so that I can reduce my outstanding balance.</td>
+        <td><span class="tag tag-blue">Core</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want to see my current balance before making a payment so that I know how much I owe.</td>
+        <td><span class="tag tag-green">Read-only</span></td>
+      </tr>
+      <tr>
+        <td>Cardholder</td>
+        <td>As a cardholder, I want confirmation after payment submission so that I know the payment was recorded successfully.</td>
+        <td><span class="tag tag-blue">Feedback</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>Specify that payment amount validation must reject zero and negative values.</li>
+      <li>Note that account active status (<code>ACCT-ACTIVE-STATUS=Y</code>) is a prerequisite for payment.</li>
+      <li>Confirmation stories should reference the dual write: both <code>ACCTFILE</code> update and <code>TRANSACT</code> write must succeed.</li>
+      <li>Balance display stories: current balance is from ACCTFILE and reflects the last batch cycle, not real-time.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>Display current balance and minimum payment due on payment screen</li>
+          <li>Add a payment history display to the bill payment screen</li>
+          <li>Cosmetic change to COBIL00 BMS map layout</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Payment with full amount validation and confirmation screen</li>
+          <li>Minimum payment due calculation and enforcement</li>
+          <li>Partial payment with remaining balance display</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>Scheduled future payment: store payment intent and process via batch</li>
+          <li>Payment reversal workflow: reverse TRANSACT record and adjust ACCTFILE</li>
+          <li>ACH payment integration via MQ with settlement confirmation</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>An active account (ACCT-ACTIVE-STATUS=Y) with a positive balance</td>
+        <td>A valid positive payment amount is entered and submitted</td>
+        <td>ACCTFILE is updated, a TRANSACT record is written, and a confirmation message is shown</td>
+      </tr>
+      <tr>
+        <td>A payment amount of zero or a negative value is entered</td>
+        <td>The payment screen is submitted</td>
+        <td>An error message is displayed and no updates are made to any file</td>
+      </tr>
+      <tr>
+        <td>An inactive account (ACCT-ACTIVE-STATUS=N)</td>
+        <td>A payment is attempted via CB00</td>
+        <td>The payment is rejected with an appropriate error message</td>
+      </tr>
+      <tr>
+        <td>A valid payment is submitted</td>
+        <td>The transaction list is viewed</td>
+        <td>The payment appears as a transaction with a negative TRAN-AMT (credit)</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>Payment amount:</strong> Must be positive and non-zero; zero and negative amounts are rejected.</li>
+      <li><strong>Account status:</strong> Account must be active (<code>ACCT-ACTIVE-STATUS=Y</code>) to accept a payment.</li>
+      <li><strong>Credit field:</strong> Payment increments <code>ACCT-CURR-CYC-CREDIT</code> on the account record in ACCTFILE.</li>
+      <li><strong>Transaction record:</strong> Payment is written to <code>TRANSACT</code> VSAM as a negative amount (credit transaction).</li>
+      <li><strong>Balance update:</strong> Real-time balance (ACCT-CURR-BAL) is recalculated by the nightly batch; the online screen reflects the last posted balance.</li>
+      <li><strong>Account lookup:</strong> <code>CARDXREF</code> is used to navigate from card number to account ID before updating ACCTFILE.</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>

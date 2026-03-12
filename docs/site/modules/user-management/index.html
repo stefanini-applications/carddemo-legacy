@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management - User Story Development Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 40px 20px; }
+.header h1 { font-size: 2em; margin-bottom: 8px; }
+.header p { opacity: 0.85; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+section { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h2 { font-size: 1.4em; color: #1a1a2e; border-bottom: 2px solid #0f3460; padding-bottom: 8px; margin-bottom: 16px; }
+h3 { font-size: 1.1em; color: #0f3460; margin: 16px 0 8px; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+pre, code { background: #f0f4f8; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.88em; }
+pre { padding: 14px; overflow-x: auto; }
+code { padding: 2px 6px; }
+.complexity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.complexity-card { border-radius: 8px; padding: 14px; }
+.simple { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+.complex { background: #fce4ec; border-left: 4px solid #e91e63; }
+.complexity-card h4 { margin-bottom: 6px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78em; margin: 2px; }
+.tag-blue { background: #e3f2fd; color: #1565c0; }
+.tag-green { background: #e8f5e9; color: #2e7d32; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+.footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+.footer a { color: #0f3460; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+th { background: #0f3460; color: white; padding: 10px; text-align: left; }
+td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:nth-child(even) { background: #f9f9f9; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>👥 User Management</h1>
+    <p>User Story Development Guide — CardDemo Mainframe Application</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <section>
+    <h2>Overview</h2>
+    <p>Admin-only module for managing the <code>USRSEC</code> VSAM security file. Provides four CICS programs: list users (<code>CU00</code>), add user (<code>CU01</code>), update user (<code>CU02</code>), and delete user (<code>CU03</code>). Access to all four transactions is controlled by a user-type check enforced in the Admin Menu (<code>COADM01C</code>).</p>
+  </section>
+
+  <section>
+    <h2>Technical Foundation</h2>
+
+    <h3>Programs</h3>
+    <ul>
+      <li><code>COUSR00C</code> — User list screen</li>
+      <li><code>COUSR01C</code> — Add new user</li>
+      <li><code>COUSR02C</code> — Update existing user</li>
+      <li><code>COUSR03C</code> — Delete user</li>
+    </ul>
+
+    <h3>BMS Maps</h3>
+    <ul>
+      <li><code>COUSR00</code> — User list map</li>
+      <li><code>COUSR01</code> — Add user map</li>
+      <li><code>COUSR02</code> — Update user map</li>
+      <li><code>COUSR03</code> — Delete confirmation map</li>
+    </ul>
+
+    <h3>CICS Transactions</h3>
+    <pre>CU00  →  COUSR00C  (list)
+CU01  →  COUSR01C  (add)
+CU02  →  COUSR02C  (update)
+CU03  →  COUSR03C  (delete)</pre>
+
+    <h3>Data Store</h3>
+    <table>
+      <tr><th>File</th><th>Type</th><th>Description</th><th>Primary Key</th></tr>
+      <tr><td><code>USRSEC</code></td><td>VSAM KSDS</td><td>User security file — 80-byte FB records</td><td>USER-ID (PIC X(08))</td></tr>
+    </table>
+
+    <h3>User Record Fields</h3>
+    <table>
+      <tr><th>Field</th><th>Picture</th><th>Valid Values</th><th>Description</th></tr>
+      <tr><td><code>USER-ID</code></td><td>PIC X(08)</td><td>Any 8-char alphanumeric</td><td>User identifier (primary key)</td></tr>
+      <tr><td><code>USER-PASSWORD</code></td><td>PIC X(08)</td><td>Any 8-char value</td><td>Plain-text password (modernization target)</td></tr>
+      <tr><td><code>USER-TYPE</code></td><td>PIC X(01)</td><td>A or U</td><td>A = Admin, U = Regular user</td></tr>
+      <tr><td><code>USER-FNAME</code></td><td>PIC X(20)</td><td>Alpha</td><td>First name</td></tr>
+      <tr><td><code>USER-LNAME</code></td><td>PIC X(20)</td><td>Alpha</td><td>Last name</td></tr>
+    </table>
+
+    <h3>Copybook</h3>
+    <ul>
+      <li><code>CSUSR01Y</code> — User record layout</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>User Story Development Guide</h2>
+
+    <h3>Story Templates</h3>
+    <table>
+      <tr><th>Persona</th><th>User Story</th><th>Tags</th></tr>
+      <tr>
+        <td>Admin</td>
+        <td>As an admin, I want to list all users so that I can audit who has access to the system.</td>
+        <td><span class="tag tag-green">Read-only</span></td>
+      </tr>
+      <tr>
+        <td>Admin</td>
+        <td>As an admin, I want to add a new user with the correct type (A or U) so that they receive appropriate access.</td>
+        <td><span class="tag tag-blue">Create</span></td>
+      </tr>
+      <tr>
+        <td>Admin</td>
+        <td>As an admin, I want to update a user's password so that compromised credentials can be reset immediately.</td>
+        <td><span class="tag tag-blue">Update</span></td>
+      </tr>
+      <tr>
+        <td>Admin</td>
+        <td>As an admin, I want to delete a terminated user so that access is revoked immediately.</td>
+        <td><span class="tag tag-orange">Delete</span></td>
+      </tr>
+    </table>
+
+    <h3>Writing Good Stories for This Module</h3>
+    <ul>
+      <li>All stories in this module should specify the <code>admin-only</code> access constraint as a precondition.</li>
+      <li>Add/update stories must validate <code>USER-TYPE</code> is exactly A or U.</li>
+      <li>Delete stories must clarify that deletion is immediate and permanent — no soft-delete or undo.</li>
+      <li>Password stories should note the modernization target: plain-text password storage is a security risk to address.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Complexity Grid</h2>
+    <div class="complexity-grid">
+      <div class="complexity-card simple">
+        <h4>🟢 Simple (1–2 pts)</h4>
+        <ul>
+          <li>List all users (read-only CU00 view)</li>
+          <li>View user details (ID, name, type)</li>
+          <li>Add display of user count on the list screen</li>
+        </ul>
+      </div>
+      <div class="complexity-card medium">
+        <h4>🟡 Medium (3–5 pts)</h4>
+        <ul>
+          <li>Add new user with USER-TYPE validation (A/U enforcement)</li>
+          <li>Update user password with length/format validation</li>
+          <li>Update user type with confirmation screen</li>
+        </ul>
+      </div>
+      <div class="complexity-card complex">
+        <h4>🔴 Complex (5–8 pts)</h4>
+        <ul>
+          <li>Bulk user import from a sequential file</li>
+          <li>Password complexity enforcement (mixed case, numbers, special chars)</li>
+          <li>Audit log of all user changes written to a new VSAM or DB2 table</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acceptance Criteria</h2>
+    <table>
+      <tr><th>Given</th><th>When</th><th>Then</th></tr>
+      <tr>
+        <td>User is logged in with USER-TYPE=A (admin)</td>
+        <td>CU00 is entered</td>
+        <td>All USRSEC records are listed with USER-ID, name, and USER-TYPE</td>
+      </tr>
+      <tr>
+        <td>A new user is added via CU01 with USER-TYPE=A</td>
+        <td>The new user logs in via CC00</td>
+        <td>The user is routed to the Admin Menu (COADM01C)</td>
+      </tr>
+      <tr>
+        <td>A user is deleted via CU03</td>
+        <td>The deleted USER-ID attempts login via CC00</td>
+        <td>Access is denied with an authentication error</td>
+      </tr>
+      <tr>
+        <td>A non-admin user (USER-TYPE=U) is logged in</td>
+        <td>The user attempts to enter CU01 directly</td>
+        <td>Access is denied and an authorization error is displayed</td>
+      </tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Business Rules</h2>
+    <ul>
+      <li><strong>Access control:</strong> All four User Management transactions are accessible only to users with <code>USER-TYPE=A</code>; enforced by <code>COADM01C</code>.</li>
+      <li><strong>Valid types:</strong> <code>USER-TYPE</code> must be exactly <code>A</code> (Admin) or <code>U</code> (Regular user); any other value is invalid.</li>
+      <li><strong>Immediate deletion:</strong> Deleting a user via CU03 immediately removes the record from USRSEC; there is no soft-delete or recovery mechanism.</li>
+      <li><strong>Password storage:</strong> <code>USER-PASSWORD</code> is stored as plain text in USRSEC — this is a known modernization target (hash + salt required).</li>
+      <li><strong>Record size:</strong> USRSEC is 80-byte fixed-block KSDS; keyed on USER-ID (first 8 bytes).</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footer">
+  <a href="../index.html">← Back to Module Index</a> &nbsp;|&nbsp; Last updated: 2025-03-12
+</div>
+
+</body>
+</html>
