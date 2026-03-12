@@ -63,15 +63,30 @@
 
 ### 3. Transaction Type Management
 **ID:** `transaction-type-management`  
-**Purpose:** Demonstrate DB2 extension for maintaining transaction-type metadata that feeds into the core VSAM processing pipeline.  
-**Key Components:** `app/app-transaction-type-db2/` programs (`COTRTUPC`, `COTRTLIC`, `COBTUPDT`), BMS maps (`COTRTUP`, `COTRTLI`), DB2 tables `TRANSACTION_TYPE` and `TRANSACTION_TYPE_CATEGORY`, jobs `CREADB21`, `TRANEXTR`, `MNTTRDB2`.  
+**Purpose:** Demonstrate DB2 extension for maintaining transaction-type metadata that feeds into the core VSAM processing pipeline. Provides a relational alternative to flat-file reference data, enabling governed admin UI edits with nightly synchronisation back to the VSAM-based core.  
+**Key Components:** `app/app-transaction-type-db2/` programs (`COTRTUPC`, `COTRTLIC`, `COBTUPDT`), BMS maps (`COTRTUP`/`CTRTUPA`, `COTRTLI`/`CTRTLIA`), COBOL host-variable declarations (`DCLTRTYP.dcl`, `DCLTRCAT.dcl`), DB2 DDL (`TRNTYPE.ddl`, `TRNTYCAT.ddl`), shared DB2 copybooks (`CSDB2RWY.cpy`, `CSDB2RPY.cpy`), CICS CSD definitions (`CRDDEMOD.csd`), jobs `CREADB21`, `TRANEXTR`, `MNTTRDB2`.  
 **Public APIs:**  
-- `CICS CTLI`/`CTTU` transactions for list/update/delete/add, with forward/backward cursor behavior in DB2.  
-- `JCL TRANEXTR` extracts DB2 rows into VSAM-friendly files consumed by `COTRN00C` flows.  
-- DB2 static SQL statements (host variables + SQLCA) inside COBOL programs.  
+- `CICS CTLI` → `COTRTLIC`: list transaction types 7 rows/page with PF7/PF8 cursor paging; inline description update (`U`) and delete (`D`) per row; optional type-code and description filters.  
+- `CICS CTTU` → `COTRTUPC`: add or edit a transaction type (2-char code + 50-char description) via static embedded SQL INSERT/UPDATE; PF5 to save, PF4 to confirm delete.  
+- `JCL TRANEXTR` (DSNTIAUL): SQL-unloads `TRANSACTION_TYPE` → `AWS.M2.CARDDEMO.TRANTYPE.PS` and `TRANSACTION_TYPE_CATEGORY` → `TRANCATG.PS` (60-byte FB records, zero-padded) consumed by `COTRN00C` transaction-list flows; backs up prior runs to GDG.  
+- `JCL MNTTRDB2` → `COBTUPDT`: batch bulk A/U/D maintenance via sequential input file (col 1 = operation code A/U/D/*, cols 2-3 = TR_TYPE, cols 4-53 = description).  
+- DB2 static SQL with SQLCA error handling and DCLGEN host variables; DSNTIAC utility for human-readable error formatting.  
+**Dependencies:**  
+- `core-application` must be installed first; admin menu `COADM01C` (CA00) options 5/6 invoke `CTLI`/`CTTU`.  
+- IBM DB2 for z/OS (subsystem `DAZ1` by default), CICS DB2ENTRY `CARDDEMO` (PLAN=CARDDEMO), RACF admin credentials.  
+**Data Models:**  
+- `CARDDEMO.TRANSACTION_TYPE`: `TR_TYPE CHAR(2) PK`, `TR_DESCRIPTION VARCHAR(50)`.  
+- `CARDDEMO.TRANSACTION_TYPE_CATEGORY`: `TRC_TYPE_CODE CHAR(2)`, `TRC_TYPE_CATEGORY CHAR(4)`, `TRC_CAT_DATA VARCHAR(50)`; FK to `TRANSACTION_TYPE` with `ON DELETE RESTRICT`.  
+**Business Rules:**  
+- `TRANSACTION_TYPE_CATEGORY` rows enforce `DELETE RESTRICT` so core processing never sees orphaned categories.  
+- Type codes and descriptions must be alphanumeric; blank descriptions are rejected on save.  
+- Optimistic-lock check in `COTRTUPC` detects concurrent edits between read and PF5 save.  
+- Updates to transaction descriptions feed `TRANEXTR` nightly to refresh VSAM metadata before online interactions.  
+- MNTTRDB2 abends on any negative SQLCODE or unrecognised operation code; comment lines (`*`) are silently skipped.  
 **User Story Examples:**  
 - As an **admin**, I want to edit transaction descriptions through `CTLI` so that customer-facing categories stay accurate.  
-- As an **automation engineer**, I want `TRANEXTR` to run nightly and deliver VSAM files so the Transaction List screen sees the latest codes.
+- As an **automation engineer**, I want `TRANEXTR` to run nightly and deliver VSAM files so the Transaction List screen sees the latest codes.  
+- As a **developer**, I want `COTRTUPC` and `COTRTLIC` as reference implementations of DB2 static SQL in CICS COBOL so I can replicate the pattern for new metadata modules.
 
 ### 4. Account Extractions
 **ID:** `account-extractions`  
