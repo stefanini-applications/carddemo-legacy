@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Batch Orchestration - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fdfefe; color: #1a2541; margin: 0; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+        .header { padding: 40px; border-radius: 16px; background: linear-gradient(135deg, #0f4c81 0%, #07c6f3 100%); color: #fff; }
+        section { background: #fff; border-radius: 12px; padding: 24px; margin-top: 16px; box-shadow: 0 12px 32px rgba(10, 12, 30, 0.08); }
+        h1, h2 { margin: 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        pre { background: #0e172a; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 24px; text-align: right; font-size: 0.9rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        .chip { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: #dfefff; color: #0d1f42; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🧱 Core Batch Orchestration</h1>
+            <p>Guidelines for writing stories that keep VSAM datasets, statements, and analytics feeds in sync via JCL and scripting.</p>
+        </header>
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Automate dataset refresh, interest calculations, posting, indexing, and purge operations that power the online experience.</p>
+            <p><strong>Business Context:</strong> Batch jobs under `app/jcl/` and `samples/jcl/` refresh VSAM files and generate derived data that users consume; stories here ensure operational readiness.</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Post-run Refresh:</strong> As a <em>batch operator</em>, I want <em>`run_full_batch.sh` to submit `ACCTFILE` → `CARDFILE` → `TRANBKP` in order</em> so that <em>all VSAM sources are fresh before posting.</em></li>
+                <li><strong>Index Rebuild:</strong> As a <em>release coordinator</em>, I want <em>`TRANIDX` to run after `TRANEXTR`</em> so that <em>alternate indexes reflect new cards before the new day.</em></li>
+                <li><strong>Purge Strategy:</strong> As a <em>platform architect</em>, I want <em>`CBPAUP0J` to delete expired auth records after 30 days</em> so that <em>IMS storage stays under 2 GB.</em></li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>JCL Sequencing:</strong> Mirror `scripts/run_full_batch.sh` order when creating new jobs; reuse the `CLOSEFIL` / `OPENFIL` pattern for file gating.</li>
+                <li><strong>Job Templates:</strong> `samples/jcl/CICCMP.jcl`, `CBPAUP0J`, `IMSMQCMP.jcl` provide proven structures—copy and adjust parameters rather than building from scratch.</li>
+                <li><strong>Automation Scripts:</strong> `scripts/run_interest_calc.sh`, `scripts/run_posting.sh`, and `remote_refresh.sh` illustrate how to wrap FTP submissions for Jenkins or remote CI.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a parameterized variable to an existing JCL (e.g., dataset name) with validation in the script.</li>
+                <li><strong>Medium (3-5 pts):</strong> Introduce a new batch job that feeds an existing VSAM dataset and update `run_full_batch.sh` to schedule it.</li>
+                <li><strong>Complex (5-8 pts):</strong> Develop a new asynchronous job that interacts with MQ before/after a Db2 operation, updating the automation script and documentation.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>JCL jobs:</strong> `ACCTFILE.jcl`, `CARDFILE.jcl`, `TRANBKP.jcl`, `TRANEXTR.jcl`, `CREASTMT.jcl`, `TRANIDX.jcl`, `CBPAUP0J`.</li>
+                        <li><strong>COBOL batch:</strong> `CBTRN02C`, `CBTRN03C`, `CBSTM03A`, `CBPAUP0C` for posting and purges.</li>
+                        <li><strong>Automation scripts:</strong> `run_full_batch.sh`, `run_posting.sh`, `remote_compile.sh`, `remote_refresh.sh`.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li><strong>core-online:</strong> Relies on fresh VSAM data from these jobs.</li>
+                        <li><strong>transaction-type:</strong> Depends on `TRANEXTR` data to supply Db2 transaction metadata.</li>
+                        <li><strong>authorization:</strong> `CBPAUP0J` must run before MQ-based flows reuse IMS space.</li>
+                        <li><strong>scripts:</strong> `scripts/run_full_batch.sh` orchestrates dataset refresh.</li>
+                    </ul>
+                </div>
+            </div>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>ACCTFILE/CARDFILE/CUSTFILE - Reload VSAM datasets with new sample data
+TRANBKP - Backup DALYTRAN before recombining transactions
+CREASTMT/CBSTM03A - Build customer statements based on posted transactions
+TRANEXTR/TRANIDX - Export metadata to VSAM and rebuild indexes before trading day
+POSTTRAN/INTCALC/COMBTRAN - Posting, interest, and merge jobs that produce the daily state
+CBPAUP0J - Expired authorization purge</code></pre>
+        </section>
+
+        <section>
+            <h2>🧪 Acceptance Criteria & Patterns</h2>
+            <ul>
+                <li><strong>Sequencing:</strong> Dataset refresh jobs must finish before `POSTTRAN`; automation scripts should log each submission (see `run_full_batch.sh`).</li>
+                <li><strong>Instrumentation:</strong> Every JCL must write RC codes that script monitors (e.g., `tnftp` echo statements) and fail fast on RC>0.</li>
+                <li><strong>Automation:</strong> Use `sleep` statements between jobs when manipulating files that are still open to avoid dataset locks.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

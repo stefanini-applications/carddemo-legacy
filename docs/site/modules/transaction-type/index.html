@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Type Management - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #0a0f1d; color: #f8fafc; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+        .header { padding: 40px; border-radius: 16px; background: linear-gradient(135deg, #0f766e 0%, #34d399 100%); color: #02111a; }
+        section { background: #111827; border-radius: 12px; padding: 24px; margin-top: 16px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.45); }
+        h1, h2 { margin: 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        pre { background: #020617; color: #ccfbf1; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 24px; text-align: right; font-size: 0.9rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        .chip { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: #65a30d; color: #0f172a; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🧭 Transaction Type Management</h1>
+            <p>User story playbook for Db2-driven transaction type CRUD plus VSAM exports.</p>
+        </header>
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Provide administrators with Db2 CRUD (via `CTTU`/`CTLI`) plus nightly exports (`TRANEXTR`) that feed legacy processing.</p>
+            <p><strong>Business Context:</strong> Db2 tables `TRANSACTION_TYPE` and `TRANSACTION_TYPE_CATEGORY` replace static VSAM files for metadata; exports keep legacy screens working while enabling relational tooling.</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Admin CRUD:</strong> As an <em>admin</em>, I want <em>`CTTU` to insert or edit transaction descriptions</em> so that <em>`TRANEXTR` exports include the latest metadata for `COACTVWC`.</em></li>
+                <li><strong>Data Stewardship:</strong> As a <em>data steward</em>, I want <em>`CTLI` to enforce `DELETE RESTRICT` constraints</em> so that <em>dependent transaction types cannot disappear unexpectedly.</em></li>
+                <li><strong>Migration Safety:</strong> As a <em>migration specialist</em>, I want <em>`TRANEXTR` to output VSAM-friendly files after `MNTTRDB2` runs</em> so that <em>COBOL jobs read consistent datasets.</em></li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>DDL & CTL:</strong> Reuse DDL and CTL scripts in `app/app-transaction-type-db2/ddl` and `ctl` when deploying new tables.</li>
+                <li><strong>SQL Patterns:</strong> Follow existing embedded SQL + SQLCA handling (seen in `COTRTUPC` and `COTRTLIC`).</li>
+                <li><strong>Export Jobs:</strong> `TRANEXTR`, `TRANIDX`, `MNTTRDB2` show how to convert Db2 data to VSAM copybooks.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new descriptive field to `TRANSACTION_TYPE` and surface it in `CTLI`.</li>
+                <li><strong>Medium (3-5 pts):</strong> Create a new category table with a referential link; ensure `TRANEXTR` exports handle the structure.</li>
+                <li><strong>Complex (5-8 pts):</strong> Introduce a new Db2 cursor-based report that powers a VSAM list page with `forward/backward` paging.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>CICS screens:</strong> `CTTU` (add/edit) and `CTLI` (list/update/delete), with SQL statements embedded in `COTRTUPC`/`COTRTLIC`.</li>
+                        <li><strong>Db2 tables:</strong> `CARDDEMO.TRANSACTION_TYPE`, `TRANSACTION_TYPE_CATEGORY`, with SQLCA handling.</li>
+                        <li><strong>Batch:</strong> `TRANEXTR`, `MNTTRDB2`, `CREADB21`, `TRANEXTR` uses static SQL via `COBTUPDT`.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li><strong>core-online:</strong> Reads exported metadata via `COACTVWC` and `COCRDUP`.</li>
+                        <li><strong>core-batch:</strong> Depends on `TRANEXTR` sequencing to rebuild indexes.</li>
+                        <li><strong>scripts:</strong> `remote_compile.sh` shows how to precompile Db2 programs.</li>
+                    </ul>
+                </div>
+            </div>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CTTU / COTRTUPC - Insert or update transaction types with SQLCA-driven validation
+CTLI / COTRTLIC - List, page, and delete transaction types using Db2 cursors
+TRANEXTR - Export Db2 data into VSAM copybook layout for legacy flows
+MNTTRDB2 - Batch maintenance via COBTUPDT to update Db2 tables
+CREADB21 - Creates Db2 schema and tables</code></pre>
+        </section>
+
+        <section>
+            <h2>🧪 Acceptance Criteria & Patterns</h2>
+            <ul>
+                <li><strong>Transactional Safety:</strong> Each embedded SQL must check `SQLCODE` in SQLCA and rollback/abort on violations.</li>
+                <li><strong>Cursor Paging:</strong> `CTLI` uses forward/backward cursor keywords; ensure new screens reuse the same PF key layout for navigation.</li>
+                <li><strong>Export Integrity:</strong> `TRANEXTR` outputs must match the layout expected by `COACTVWC` for downstream screens.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

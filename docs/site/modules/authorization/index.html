@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization Extension - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #050816; color: #edf2ff; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+        .header { padding: 40px; border-radius: 16px; background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); color: #1f1f1f; }
+        section { background: #0f172a; border-radius: 12px; padding: 24px; margin-top: 16px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4); }
+        h1, h2 { margin: 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        pre { background: #111827; color: #e0f2fe; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 24px; text-align: right; font-size: 0.9rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .chip { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: #fde68a; color: #92400e; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🛡️ Authorization Extension</h1>
+            <p>User story playbook for MQ-driven authorization flows that touch IMS, Db2, and VSAM.</p>
+        </header>
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Handle pending authorization requests from MQ, apply business rules, persist them in IMS/Db2, and give analysts screens for review.</p>
+            <p><strong>Business Context:</strong> The MQ request queue `AWS.M2.CARDDEMO.PAUTH.REQUEST` is triggered by cloud clients; CICS programs `COPAUA0C`, `COPAUS0C`, and `COPAUS1C` keep IMS segments and `AUTHFRDS` table synchronized.</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Authorization Processing:</strong> As a <em>fraud analyst</em>, I want <em>PF5 on CPVD to mark an authorization as fraudulent</em> so that <em>the record writes to Db2 `AUTHFRDS` and downstream reports flag it.</em></li>
+                <li><strong>MQ Format:</strong> As a <em>cloud integrator</em>, I want <em>queue-to-program correlation to rely on the documented comma-separated layout</em> so that <em>APIs can parse responses to the `AUTH-ID-CODE` field.</em></li>
+                <li><strong>Purge Workflow:</strong> As an <em>operator</em>, I want <em>`CBPAUP0J` to delete authorizations older than 30 days</em> so that <em>IMS disk usage stays within budget.</em></li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Copybooks:</strong> `CIPAUSMY`, `CIPAUDTY`, `CCPAURQY`, `CCPAURLY` centralize message layouts for IMS and MQ.</li>
+                <li><strong>MQ Setup:</strong> Follow the queue names in the README; use `COPAUA0C` to inspect message handling before replicating the pattern.</li>
+                <li><strong>Db2 Fraud Store:</strong> Db2 table `AUTHFRDS` includes `AUTH_FRAUD`, `FRAUD_RPT_DATE`; reusing these columns accelerates analytics stories.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new MQ field to the request layout and surface it in the summary screen `CPVS`.</li>
+                <li><strong>Medium (3-5 pts):</strong> Extend `CBPAUP0J` to purge IMS segments based on a new status column and update the MQ response.</li>
+                <li><strong>Complex (5-8 pts):</strong> Build a new MQ consumer that evaluates fraud rules, updates IMS, and triggers a Db2 insert for every event.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>CICS programs:</strong> `COPAUA0C` (MQ trigger processor), `COPAUS0C` (summary), `COPAUS1C` (detail), `COPAUS2C` (fraud tagging).</li>
+                        <li><strong>Batch job:</strong> `CBPAUP0J` (expired purge) and `CBPAUP0C` COBOL logic.</li>
+                        <li><strong>Databases:</strong> IMS segments `PAUTSUM0`, `PAUTDTL1` plus Db2 table `AUTHFRDS`.</li>
+                        <li><strong>MQ:</strong> Queues `AWS.M2.CARDDEMO.PAUTH.REQUEST` / `PAUTH.REPLY`.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li><strong>VSAM:</strong> Account data from `COACTVWC` ensures authorization context.</li>
+                        <li><strong>Db2:</strong> Fraud records replicate into analytics pipelines (optional integration).</li>
+                        <li><strong>core-batch:</strong> Purge job runs every night; ensure `CBPAUP0J` appears in `run_full_batch.sh`.</li>
+                    </ul>
+                </div>
+            </div>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>MQ Request to AWS.M2.CARDDEMO.PAUTH.REQUEST
+COPAUA0C (CP00) - Validates request, writes IMS segments, replies on PAUTH.REPLY
+CPVS/COPAUS0C - Summary screen for pending authorizations
+CPVD/COPAUS1C - Detail screen + PF actions (PF5 to mark fraud)
+CBPAUP0J/CBPAUP0C - Batch purge of IMS authorizations older than 30 days
+DB2 AUTHFRDS - Records flagged fraudulent for analytics</code></pre>
+        </section>
+
+        <section>
+            <h2>🧪 Acceptance Criteria & Patterns</h2>
+            <ul>
+                <li><strong>Message Integrity:</strong> Requests must follow the documented comma-separated layout and responses must align with correlation IDs.</li>
+                <li><strong>Error Handling:</strong> MQ errors go to `CCPAUERY`; BMS message area (defined in `CSMSG01Y`) must show failure text.</li>
+                <li><strong>Performance:</strong> MQ round trip < 5 seconds; purges cannot block the nightly `run_full_batch.sh` sequence.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

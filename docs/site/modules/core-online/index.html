@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Online Experience - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f5f6fb; color: #1f1f2b; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+        .header { padding: 40px; border-radius: 16px; background: linear-gradient(135deg, #4863F0 0%, #8E54E9 100%); color: #fff; }
+        section { background: #fff; border-radius: 12px; padding: 24px; margin-top: 16px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+        h1 { margin: 0 0 8px; }
+        h2 { margin-top: 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        pre { background: #0f172a; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 24px; font-size: 0.9rem; text-align: right; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .chip { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: #e0e4ff; color: #2e3a8c; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📦 Core Online Experience</h1>
+            <p>Guide for writing user stories that enhance the base CardDemo BMS/CICS experience for regular and administrative journeys.</p>
+        </header>
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Deliver the legacy CardDemo 3270 experience—user signon, menus, account/card management, transaction browsing, bill payments, and statements—driven by BMS maps and COBOL programs.</p>
+            <p><strong>Business Context:</strong> Every customer-facing story touches the `CC00` signon flow, tab-delivers to `CM00`, and ultimately hits VSAM masters (`USERSEC`, `ACCTDATA`, `CARDDATA`, `DALYTRAN`). Consistency is enforced by copybooks such as `CVACT01Y`, `CVACT02Y`, `CVCUS01Y`, and `CVTRA05Y`.</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Balance & Transactions:</strong> As a <em>regular user</em>, I want <em>to view my account balance via `CAVW` and scroll with PF7/PF8</em> so that <em>I can decide if I have room to pay a bill.</em></li>
+                <li><strong>Payments:</strong> As a <em>regular user</em>, I want <em>to create a bill payment through `CB00` that respects card status</em> so that <em>the daily `POSTTRAN` job posts accurate transactions.</em></li>
+                <li><strong>Admin Ops:</strong> As a <em>customer service agent</em>, I want <em>to review statements via `CBSTM03A`</em> so that <em>I can explain charges during calls.</em></li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Copybook Reuse:</strong> Update `CVACT01Y`, `CVACT02Y`, `CVTRA05Y`, and `CVACT03Y` to propagate field changes across all screens.</li>
+                <li><strong>BMS Map Library:</strong> `app/bms/COCRDLI`, `COACTVW`, `COPAU00`, etc., share layouts—duplicate and tweak only segments that change labels or PF key assignments.</li>
+                <li><strong>PF Key Patterns:</strong> PF3 to exit, PF5 to search/mark, PF7/PF8 to page. Follow existing message-area and `MSGAREA` definitions in `CSMSG01Y`.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new label/field to `COACTVWC`/`COACTUPC` and update the corresponding copybook.</li>
+                <li><strong>Medium (3-5 pts):</strong> Introduce a new transaction type that requires `COTRN02C` validation logic plus a downstream `TRANEXTR` feed to `transaction-type`.</li>
+                <li><strong>Complex (5-8 pts):</strong> Merge a new MQ-based data source into an existing form (e.g., embed an authorization status panel guided by `authorization` module messaging).</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>BMS maps:</strong> `COSGN00C`, `COMEN01C`, `COACTVWC`, `COCRDUP`, `COTRN00C`, `CBIL00C`, `CBSTM03A`.</li>
+                        <li><strong>COBOL programs:</strong> `COSGN00C`, `COACTUPC`, `COCRDUPC`, `CBTRN02C`, `CBTRN03C` coordinate VSAM reads/writes.</li>
+                        <li><strong>Copybooks:</strong> `CVACT01Y`, `CVACT02Y`, `CVACT03Y`, `CVTRA05Y`, `CVCUS01Y` define record layouts.</li>
+                        <li><strong>VSAM masters:</strong> `USERSEC`, `ACCTDATA`, `CARDDATA`, `CUSTDATA`, `DALYTRAN` store live customer data.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li><strong>core-batch:</strong> Relies on `TRANEXTR`, `POSTTRAN`, `CBSTM03A` to keep data fresh.</li>
+                        <li><strong>transaction-type:</strong> Uses `TRANSACTION_TYPE` metadata synchronized via `TRANEXTR`.</li>
+                        <li><strong>authorization:</strong> Optional `CPVS`/`CPVD` screens tie pending authorizations into account views.</li>
+                        <li><strong>scripts/run_full_batch.sh:</strong> Orchestrates dataset refresh before online signon.</li>
+                    </ul>
+                </div>
+            </div>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CC00 / COSGN00C - Handle signon authentication (PF keys drive login flows)
+CM00 / COMEN01C - Main menu dispatcher
+CAVW / COACTVWC - Account view with field-level consistency checks
+CAUP / COACTUPC - Account update (VSAM writeback)
+COTRN0xC - Transaction list/view/add (DALYTRAN updates)
+CB00 / COBIL00C - Bill payment and card validation
+CBSTM03A - Statement generation per customer</code></pre>
+        </section>
+
+        <section>
+            <h2>🧪 Acceptance Criteria & Patterns</h2>
+            <ul>
+                <li><strong>Data integrity:</strong> Every update must preserve `EXP-ACCT-CURR-BAL` vs. credit limit and succeed in the daily `POSTTRAN` run.</li>
+                <li><strong>Validation:</strong> PF keys must trigger the `MSGAREA` defined in `CSMSG01Y` and display the correct BMS message text.</li>
+                <li><strong>Notifications:</strong> Use BMS message area instead of global toast; update `CSMSG01Y` to change severity text.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>

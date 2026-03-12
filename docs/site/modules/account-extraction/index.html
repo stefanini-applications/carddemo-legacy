@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Extraction via MQ - User Story Development Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+        .header { padding: 40px; border-radius: 16px; background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%); color: #fff; }
+        section { background: #fff; border-radius: 12px; padding: 24px; margin-top: 16px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08); }
+        h1, h2 { margin: 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        pre { background: #0f172a; color: #e0f2fe; padding: 16px; border-radius: 8px; overflow-x: auto; }
+        footer { margin-top: 24px; text-align: right; font-size: 0.9rem; }
+        .chip { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: #bfdbfe; color: #1e3a8a; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📡 Account Extraction via MQ</h1>
+            <p>Storybook for MQ request/response patterns that expose VSAM-backed account data.</p>
+        </header>
+
+        <section>
+            <h2>📋 Overview</h2>
+            <p><strong>Purpose:</strong> Demonstrate MQ-based account data release patterns using `CDRD` (date inquiry) and `CDRA` (account detail) transactions.</p>
+            <p><strong>Business Context:</strong> MQ responses return 300-byte payloads backed by `CVACT01Y` layouts and allow external systems to integrate without direct VSAM access.</p>
+        </section>
+
+        <section>
+            <h2>🎯 User Story Development Guide</h2>
+            <h3>📝 Module-Specific US Templates</h3>
+            <ul>
+                <li><strong>Date Inquiry:</strong> As an <em>integration partner</em>, I want <em>`CDRD` to return the system date via MQ</em> so that <em>clients can reconcile timezones before sending requests.</em></li>
+                <li><strong>Account Details:</strong> As a <em>partner service</em>, I want <em>`CDRA` to fetch VSAM-backed account details for an account number</em> so that <em>legacy data can be lifted into a modern dashboard.</em></li>
+                <li><strong>Correlated Response:</strong> As a <em>platform architect</em>, I want <em>correlation IDs returned with MQ responses</em> so that <em>requesters can safely match asynchronous replies to their requests.</em></li>
+            </ul>
+            <h3>⚡ Development Acceleration Factors</h3>
+            <ul>
+                <li><strong>Message Layouts:</strong> Date and account request/response copybooks mimic `CVACT01Y` structure—reuse them for new MQ payloads.</li>
+                <li><strong>MQ definitions:</strong> Queue names in `app/app-vsam-mq/README.md` describe `CARDDEMO.REQUEST.QUEUE` + `CARDDEMO.RESPONSE.QUEUE` setups.</li>
+                <li><strong>Transaction Patterns:</strong> `CODATE01` and `COACCT01` show how to pack/unpack MQ payloads and call VSAM records from BMS screens.</li>
+            </ul>
+            <h3>📊 Complexity Guidelines</h3>
+            <ul>
+                <li><strong>Simple (1-2 pts):</strong> Add a new field to `ACCT-RESPONSE-MSG` and expose it in the `CDRA` detail screen without touching MQ headers.</li>
+                <li><strong>Medium (3-5 pts):</strong> Introduce a new MQ listener that merges MQ data with VsAM data before pushing to a JMS queue.</li>
+                <li><strong>Complex (5-8 pts):</strong> Build a service that reuses the MQ request/response pattern to backfill a third-party API while reusing `CODATE01` message framing.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>🔧 Technical Foundation</h2>
+            <div class="grid">
+                <div>
+                    <h3>🏗️ Key Components</h3>
+                    <ul>
+                        <li><strong>COBOL programs:</strong> `CODATE01`, `COACCT01` handling MQ requests and VSAM reads.</li>
+                        <li><strong>MQ queues:</strong> `CARDDEMO.REQUEST.QUEUE`, `CARDDEMO.RESPONSE.QUEUE`, correlation ID usage for `CDRD`/`CDRA`.</li>
+                        <li><strong>Copybooks:</strong> `ACCT-REQUEST-MSG`, `ACCT-RESPONSE-MSG`, `DATE-REQUEST/RESPONSE-MSG` define payload structures.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>🔗 Dependencies</h3>
+                    <ul>
+                        <li><strong>core-online:</strong> Uses the same VSAM structures as account screens (`CVACT01Y`).</li>
+                        <li><strong>scripts:</strong> MQ definitions referenced from `app/app-vsam-mq/README.md` and `csd` definitions.</li>
+                        <li><strong>authorization:</strong> Shares MQ expertise for correlation logic.</li>
+                    </ul>
+                </div>
+            </div>
+            <h3>🌐 Public Interfaces</h3>
+            <pre><code>CDRD - Sends DATE request to MQ, receives date response via CARDDEMO.RESPONSE.QUEUE
+CDRA - Sends account number request, receives 300-byte account payload referencing CVACT01Y structure
+MQ correlation IDs - ensures asynchronous replies match original requests</code></pre>
+        </section>
+
+        <section>
+            <h2>🧪 Acceptance Criteria & Patterns</h2>
+            <ul>
+                <li><strong>Payload fidelity:</strong> Account responses must be exactly 300 bytes and align with `ACCT-RESPONSE-MSG` layout.</li>
+                <li><strong>Messaging:</strong> Each request uses correlation IDs; scripts or job logs should capture RC codes to detect MQ errors.</li>
+                <li><strong>Performance:</strong> MQ request/response should finish < 5 seconds P95.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p><a href="../../system-overview.md">← Back to System Overview</a></p>
+            <p><em>Last updated: March 12, 2026</em></p>
+        </footer>
+    </div>
+</body>
+</html>
